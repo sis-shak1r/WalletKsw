@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Mutec Smart Wallet</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -14,11 +14,10 @@
     body { font-family: 'Sarabun', sans-serif; background-color: #f7f9fc; color: #2d3748; margin: 0; padding: 0; }
     .main-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.05); position: relative; padding-bottom: 100px; }
     
-    /* เปลี่ยนชุดสีการ์ดเป็นโทนสีฟ้า Digital Oceans Bright Blue Gradient ตามคำขอ */
     .balance-card { background: linear-gradient(135deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%); color: white; border-radius: 24px; padding: 24px; box-shadow: 0 10px 25px rgba(67, 100, 247, 0.25); }
     .digital-badge { background: rgba(255, 255, 255, 0.18); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.15); }
     
-    /* ปรับแต่งเมนูด้านล่างเป็น Sticky Floating ลอยอยู่ขอบจอด้านล่างถาวรในทุกขนาดหน้าจอ */
+    /* เมนูด้านล่างแบบ Sticky Floating รองรับอุปกรณ์หน้าจอมีบาก (Safe Area) */
     .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 75px; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; align-items: center; z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.06); padding-bottom: env(safe-area-inset-bottom); }
     .nav-item-btn { text-align: center; color: #64748b; font-size: 11px; cursor: pointer; border: none; background: none; transition: color 0.2s; text-decoration: none; padding: 5px 0; width: 25%; }
     .nav-item-btn i { font-size: 20px; display: block; margin-bottom: 4px; transition: transform 0.2s; }
@@ -32,11 +31,35 @@
     .modal-header-custom { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
     .btn-close-custom { background: #f1f5f9; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; }
     
-    /* กล่องกล้อง */
-    .video-wrapper { position: relative; width: 100%; height: 320px; border-radius: 16px; overflow: hidden; background: #000; border: 2px solid #334155; }
+    /* 📱 สไตล์หน้าต่างสแกนคิวอาร์โค้ดแบบเต็มจอระดับพรีเมียม (สไตล์แอปธนาคาร) */
+    .qr-modal-bg { background: #000000 !important; padding: 0 !important; overflow: hidden !important; }
+    .qr-header-overlay { position: absolute; top: 0; left: 0; width: 100%; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%); }
+    .qr-header-title { color: #ffffff; font-weight: 600; margin: 0; font-size: 18px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    
+    /* ปุ่มเลือกรูปจากคลังภาพสไตล์แอปธนาคาร */
+    .btn-gallery-trigger { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.3); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffffff; backdrop-filter: blur(8px); transition: background 0.2s; }
+    .btn-gallery-trigger:hover { background: rgba(255, 255, 255, 0.3); }
+    
+    /* ตัวครอบและวิดีโอกล้องขยายเต็มกรอบหน้าจอพอดี */
+    .video-fullscreen-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5; }
     #preview-video { width: 100%; height: 100%; object-fit: cover; }
-    .scan-laser { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #ef4444; box-shadow: 0 0 8px #ef4444; animation: laserAnim 2s infinite linear; z-index: 5; }
-    @keyframes laserAnim { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+    
+    /* ช่องเล็งเป้า (Scanning Target Frame) กลางหน้าจอ */
+    .qr-scanner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+    .scan-box-finder { width: 260px; height: 260px; border: 2px solid rgba(255, 255, 255, 0.4); position: relative; box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.6); border-radius: 16px; }
+    
+    /* มุมเรืองแสงรอบกล่องเล็ง */
+    .scan-corner { position: absolute; width: 24px; height: 24px; border: 4px solid #00cbd5; pointer-events: none; }
+    .top-left { top: -2px; left: -2px; border-right: 0; border-bottom: 0; border-top-left-radius: 12px; }
+    .top-right { top: -2px; right: -2px; border-left: 0; border-bottom: 0; border-top-right-radius: 12px; }
+    .bottom-left { bottom: -2px; left: -2px; border-right: 0; border-top: 0; border-bottom-left-radius: 12px; }
+    .bottom-right { bottom: -2px; right: -2px; border-left: 0; border-top: 0; border-bottom-right-radius: 12px; }
+    
+    /* เส้นเลเซอร์วิ่งขึ้นลงสแกน */
+    .scan-laser { position: absolute; top: 0; left: 5%; width: 90%; height: 3px; background: linear-gradient(to right, transparent, #00cbd5, transparent); box-shadow: 0 0 10px #00cbd5; animation: laserAnim 2.5s infinite ease-in-out; }
+    @keyframes laserAnim { 0% { top: 5%; } 50% { top: 95%; } 100% { top: 5%; } }
+
+    .scan-hint-text { color: rgba(255, 255, 255, 0.8); font-size: 13px; text-align: center; margin-top: 24px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
 
     .history-item { padding: 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
     #loading-screen { position: fixed; top:0; left:50%; transform: translateX(-50%); width:100%; max-width:480px; height:100%; background:#ffffff; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; }
@@ -93,7 +116,7 @@
         <div class="text-primary me-3"><i class="fa-solid fa-shield-halved fa-2x"></i></div>
         <div>
           <h6 class="fw-bold mb-1" style="font-size:13px;">เครือข่ายภายนอก (GitHub Pages)</h6>
-          <small class="text-muted d-block" style="font-size:11px;">กล้องทำงานแบบ Native พร้อมเข้ารหัสส่งต่อผ่านระบบ API ของสถาบัน</small>
+          <small class="text-muted d-block" style="font-size:11px;">กล้องทำงานแบบ Native ขยายเต็มกรอบ พร้อมระบบเลือกรูปภาพผ่านคลังในอุปกรณ์</small>
         </div>
       </div>
     </div>
@@ -136,15 +159,34 @@
   <button id="btn-submit-transfer" class="btn btn-success w-100 py-3 fw-bold rounded-3" onclick="confirmTransfer()" disabled>ตรวจสอบและยืนยัน</button>
 </div>
 
-<div id="modal-qr" class="fullscreen-modal" style="background: #111827; color: white;">
-  <div class="modal-header-custom">
-    <h5 class="fw-bold mb-0 text-white"><i class="fa-solid fa-camera me-2 text-info"></i>สแกนคิวอาร์โค้ด</h5>
-    <button class="btn-close-custom bg-dark text-white" onclick="stopRealtimeScanner(); closeFullModal('modal-qr');"><i class="fa-solid fa-xmark"></i></button>
+<div id="modal-qr" class="fullscreen-modal qr-modal-bg">
+  
+  <div class="qr-header-overlay">
+    <button class="btn-close-custom bg-dark text-white" style="background: rgba(0,0,0,0.5) !important;" onclick="stopRealtimeScanner(); closeFullModal('modal-qr');">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <h5 class="qr-header-title">สแกนคิวอาร์โค้ด</h5>
+    
+    <button class="btn-gallery-trigger" onclick="document.getElementById('gallery-file-input').click();" title="เลือกรูปภาพจากคลัง">
+      <i class="fa-regular fa-image" style="font-size: 18px;"></i>
+    </button>
   </div>
-  <p class="small text-white-50 text-center mb-4">หันคิวอาร์โค้ดสตรีมภาพสดผ่านกล้องโทรศัพท์ของคุณ</p>
-  <div class="video-wrapper mb-3">
+
+  <input type="file" id="gallery-file-input" accept="image/*" style="display: none;" onchange="scanQRFromGallery(this)">
+
+  <div class="video-fullscreen-container">
     <video id="preview-video"></video>
-    <div class="scan-laser"></div>
+  </div>
+
+  <div class="qr-scanner-overlay">
+    <div class="scan-box-finder">
+      <div class="scan-corner top-left"></div>
+      <div class="scan-corner top-right"></div>
+      <div class="scan-corner bottom-left"></div>
+      <div class="scan-corner bottom-right"></div>
+      <div class="scan-laser"></div>
+    </div>
+    <div class="scan-hint-text">วางคิวอาร์โค้ดให้อยู่ในกรอบ หรือแตะไอคอนรูปภาพเพื่อเลือกรูปจากคลัง</div>
   </div>
 </div>
 
@@ -206,10 +248,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-  // 🔗 ตัวแปรชี้เป้าลิงก์ระบบ API หลักของวิทยาลัย
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw96OeypnEruBxcg91RdIe8PennOP2VY_FOeFUvdPlrychZpu3e2s8fIaVxGuYpRupTPQ/exec";
 
-  // ดึงรหัสไอดีบัญชีจากพารามิเตอร์ URL ของหน้าเว็บ (?id=xxxx)
   const urlParams = new URLSearchParams(window.location.search);
   const currentStudentId = urlParams.get('id') || "";
 
@@ -220,7 +260,6 @@
 
   document.getElementById('filter-month').value = new Date().getMonth() + 1;
 
-  // ฟังก์ชันกลางประสานข้อมูล Fetch API ข้ามแพลตฟอร์ม
   async function callBackendAPI(payload) {
     const response = await fetch(GAS_API_URL, {
       method: "POST",
@@ -249,7 +288,6 @@
     document.getElementById('bottom-bar').classList.add('d-none');
   }
 
-  // แสดงผลบนหน้า Dashboard
   function showDashboard(profile) {
     document.getElementById('main-dashboard').classList.remove('d-none');
     document.getElementById('txt-student-name').innerText = profile.name;
@@ -267,14 +305,14 @@
   function openFullModal(modalId) { document.getElementById(modalId).classList.add('active'); }
   function closeFullModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
 
-  // --- ⚡ ระบบเรียกใช้กล้องแบบทำงานทันทีแบบสตรีมตรง ไร้ตัวกรองขอสิทธิ์หน้าซ้ำซ้อน ---
+  // --- ⚡ ระบบสแกนผ่านกล้องสดแบบเต็มจอ (Full Screen Native Camera) ---
   function autoStartCameraDirectly() {
     const videoElem = document.getElementById('preview-video');
     
-    // สร้างอ็อบเจกต์เชื่อมต่อกล้องทำงานทันที
     qrScannerInstance = new QrScanner(videoElem, result => handleQRSuccess(result.data), {
-      highlightScanRegion: true,
-      highlightCodeOutline: true
+      highlightScanRegion: false, // ปิดกรอบไฮไลท์ดีฟอลต์สีเหลืองของไลบรารี เพื่อใช้กรอบสไตล์แอปธนาคารที่เราออกแบบเอง
+      highlightCodeOutline: false,
+      maxScansPerSecond: 10
     });
 
     qrScannerInstance.start().catch(err => {
@@ -289,6 +327,28 @@
       qrScannerInstance.stop(); 
       qrScannerInstance.destroy(); 
       qrScannerInstance = null; 
+    }
+    document.getElementById('gallery-file-input').value = ""; // รีเซ็ตตัวเลือกไฟล์คลังภาพ
+  }
+
+  // --- 🖼️ ฟังก์ชันเลือกไฟล์รูปภาพจากคลังเพื่อเอามาสแกนถอดรหัสรหัสบัญชี ---
+  function scanQRFromGallery(inputElement) {
+    if (inputElement.files && inputElement.files[0]) {
+      const file = inputElement.files[0];
+      
+      Swal.fire({ title: 'กำลังอ่านภาพคิวอาร์...', didOpen: () => Swal.showLoading() });
+      
+      // ใช้ความสามารถ Static Method ของ QrScanner ในการถอดรหัสรูปภาพโดยตรงไม่ต้องเปิดกล้อง
+      QrScanner.scanImage(file)
+        .then(result => {
+          Swal.close();
+          handleQRSuccess(result);
+        })
+        .catch(err => {
+          Swal.close();
+          Swal.fire('ไม่พบรหัสคิวอาร์', 'รูปภาพนี้ไม่มี QR Code หรือระบบไม่สามารถอ่านค่าได้ กรุณาลองใหม่อีกครั้ง', 'error');
+          inputElement.value = ""; // ล้างค่าเดิม
+        });
     }
   }
 
