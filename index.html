@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Mutec Smart Wallet</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
+
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f7f9fc; color: #2d3748; margin: 0; padding: 0; }
+    .main-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.05); position: relative; padding-bottom: 90px; }
+    .balance-card { background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); color: white; border-radius: 24px; padding: 24px; box-shadow: 0 10px 25px rgba(32, 58, 67, 0.2); }
+    .digital-badge { background: rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); }
+    
+    /* Bottom Nav Bar สไตล์ Krungthai NEXT */
+    .bottom-nav { position: absolute; bottom: 0; left: 0; width: 100%; height: 75px; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; align-items: center; z-index: 1000; box-shadow: 0 -4px 10px rgba(0,0,0,0.03); }
+    .nav-item-btn { text-align: center; color: #64748b; font-size: 11px; cursor: pointer; border: none; background: none; transition: color 0.2s; text-decoration: none; padding: 5px 0; width: 25%; }
+    .nav-item-btn i { font-size: 20px; display: block; margin-bottom: 4px; transition: transform 0.2s; }
+    .nav-item-btn.active, .nav-item-btn:hover { color: #007aff; }
+    .nav-item-btn.qr-center { position: relative; top: -18px; width: 64px; height: 64px; background: linear-gradient(135deg, #007aff 0%, #0056b3 100%); color: white !important; border-radius: 50%; box-shadow: 0 4px 15px rgba(0, 122, 255, 0.35); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .nav-item-btn.qr-center i { font-size: 24px; margin: 0; color: white; }
+    
+    /* Full Screen Modals */
+    .fullscreen-modal { position: fixed; top: 0; left: 50%; transform: translateX(-50%) translateY(100%); width: 100%; max-width: 480px; height: 100%; background: #ffffff; z-index: 1050; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto; padding: 24px; }
+    .fullscreen-modal.active { transform: translateX(-50%) translateY(0); }
+    .modal-header-custom { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .btn-close-custom { background: #f1f5f9; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; }
+    
+    /* กล่องกล้อง */
+    .video-wrapper { position: relative; width: 100%; height: 320px; border-radius: 16px; overflow: hidden; background: #000; border: 2px solid #334155; }
+    #preview-video { width: 100%; height: 100%; object-fit: cover; }
+    .scan-laser { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #ef4444; box-shadow: 0 0 8px #ef4444; animation: laserAnim 2s infinite linear; }
+    @keyframes laserAnim { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+
+    .history-item { padding: 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    #loading-screen { position: fixed; top:0; left:50%; transform: translateX(-50%); width:100%; max-width:480px; height:100%; background:#ffffff; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  </style>
+</head>
+<body>
+
+<div class="main-container d-flex flex-column justify-content-between">
+  
+  <div id="loading-screen">
+    <div class="spinner-border text-primary mb-3" role="status"></div>
+    <h6 class="fw-bold text-secondary">กำลังเชื่อมต่อบัญชีโครงข่าย...</h6>
+  </div>
+
+  <div id="denied-screen" class="p-4 text-center my-auto d-none">
+    <div class="text-danger mb-4"><i class="fa-solid fa-circle-lock fa-5x"></i></div>
+    <h4 class="fw-bold text-danger">ไม่อนุญาตให้เข้าถึงระบบ</h4>
+    <p class="text-muted small">กรุณาเข้าใช้งานผ่านลิงก์ระบุตัวตนรหัสบัญชีที่ถูกต้อง</p>
+  </div>
+
+  <div id="main-dashboard" class="p-4 d-none">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <div>
+        <small class="text-muted d-block">ชื่อบัญชีผู้ใช้งาน</small>
+        <h5 class="fw-bold mb-0" id="txt-student-name">-</h5>
+      </div>
+      <div class="text-end">
+        <span class="badge bg-light text-dark px-3 py-2 rounded-pill border" style="font-size:12px; color: #475569 !important;">
+          เลขที่บัญชี: <span id="txt-student-id">-</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="balance-card mb-4">
+      <small class="opacity-75"><i class="fa-solid fa-wallet me-1"></i> ยอดเงินที่ใช้ได้ทั้งหมด (Wallet)</small>
+      <h1 class="fw-bold my-2">฿<span id="txt-wallet-balance">0.00</span></h1>
+      
+      <div class="digital-badge mt-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small class="d-block opacity-75"><i class="fa-solid fa-graduation-cap me-1"></i> บัญชีสวัสดิการสถาบัน (Digital)</small>
+            <span class="fw-bold" style="font-size: 18px;">฿<span id="txt-digital-balance">0.00</span></span>
+          </div>
+          <div class="text-end" style="border-left: 1px solid rgba(255,255,255,0.2); padding-left: 12px;">
+            <small class="d-block opacity-75" style="font-size:11px;">วงเงินจำกัดวันนี้เหลือ</small>
+            <span class="fw-bold" style="font-size: 14px;">฿<span id="txt-digital-limit">0.00</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 bg-light p-3 rounded-4 mb-3">
+      <div class="d-flex align-items-center">
+        <div class="text-primary me-3"><i class="fa-solid fa-shield-halved fa-2x"></i></div>
+        <div>
+          <h6 class="fw-bold mb-1" style="font-size:13px;">เครือข่ายภายนอก (GitHub Pages)</h6>
+          <small class="text-muted d-block" style="font-size:11px;">กล้องทำงานแบบ Native พร้อมเข้ารหัสส่งต่อผ่านระบบ API ของสถาบัน</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bottom-bar" class="bottom-nav d-none">
+    <button class="nav-item-btn" onclick="openFullModal('modal-transfer')">
+      <i class="fa-solid fa-money-bill-transfer"></i>โอนเงิน
+    </button>
+    <button class="nav-item-btn qr-center" onclick="openFullModal('modal-qr'); triggerPermissionPrompt();">
+      <i class="fa-solid fa-qrcode"></i>
+    </button>
+    <button class="nav-item-btn" onclick="openFullModal('modal-history'); loadHistory();">
+      <i class="fa-solid fa-clock-rotate-left"></i>ประวัติ
+    </button>
+  </div>
+</div>
+
+<div id="modal-transfer" class="fullscreen-modal">
+  <div class="modal-header-custom">
+    <h5 class="fw-bold mb-0"><i class="fa-solid fa-paper-plane me-2 text-primary"></i>โอนเงิน</h5>
+    <button class="btn-close-custom" onclick="closeFullModal('modal-transfer'); resetTransferFields();"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="mb-3">
+    <label class="form-label small fw-bold">ระบุเลขที่บัญชีปลายทาง</label>
+    <div class="input-group">
+      <input type="number" id="friend-id-input" class="form-control form-control-lg" placeholder="กรอกเลขบัญชีปลายทาง">
+      <button class="btn btn-primary px-4" type="button" onclick="searchFriend('friend-id-input')"><i class="fa-solid fa-magnifying-glass"></i></button>
+    </div>
+  </div>
+  <div id="friend-info-box" class="card bg-light border-0 p-3 mb-3 d-none rounded-3">
+    <small class="text-muted d-block">ชื่อบัญชีผู้รับเงิน</small>
+    <h6 class="fw-bold text-dark mb-1" id="target-name">-</h6>
+    <small class="text-muted">เลขบัญชี: <span id="target-id">-</span></small>
+  </div>
+  <div class="mb-4">
+    <label class="form-label small fw-bold">จำนวนเงินโอน (บาท)</label>
+    <input type="number" id="transfer-amount" class="form-control form-control-lg text-center fw-bold text-primary" placeholder="0.00" disabled style="font-size: 24px;">
+  </div>
+  <button id="btn-submit-transfer" class="btn btn-success w-100 py-3 fw-bold rounded-3" onclick="confirmTransfer()" disabled>ตรวจสอบและยืนยัน</button>
+</div>
+
+<div id="modal-qr" class="fullscreen-modal" style="background: #111827; color: white;">
+  <div class="modal-header-custom">
+    <h5 class="fw-bold mb-0 text-white"><i class="fa-solid fa-camera me-2 text-info"></i>สแกนคิวอาร์โค้ด</h5>
+    <button class="btn-close-custom bg-dark text-white" onclick="stopRealtimeScanner(); closeFullModal('modal-qr');"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <p class="small text-white-50 text-center mb-4">หันคิวอาร์โค้ดสตรีมภาพสดผ่านกล้องโทรศัพท์ของคุณ</p>
+  <div class="video-wrapper mb-3">
+    <div id="camera-permission-box" class="d-flex flex-column align-items-center justify-content-center p-4 text-center" style="position: absolute; top:0; left:0; width:100%; height:100%; background: #1f2937; z-index: 10;">
+      <div class="text-info mb-3"><i class="fa-solid fa-video fa-3x"></i></div>
+      <h6 class="fw-bold mb-2">เปิดใช้งานระบบกล้องอุปกรณ์</h6>
+      <p class="text-white-50" style="font-size:12px; max-width:280px;">เพื่อใช้ตรวจจับ QR Code รหัสบัญชีผู้โอนภายนอกได้โดยตรง</p>
+      <div class="d-flex gap-2 mt-2 w-100" style="max-width: 280px;">
+        <button class="btn btn-sm btn-outline-light flex-fill py-2 rounded-3" onclick="stopRealtimeScanner(); closeFullModal('modal-qr');">ยกเลิก</button>
+        <button class="btn btn-sm btn-info text-white flex-fill py-2 rounded-3 fw-bold" onclick="requestAndStartCamera()">อนุญาต</button>
+      </div>
+    </div>
+    <video id="preview-video"></video>
+    <div class="scan-laser"></div>
+  </div>
+</div>
+
+<div id="modal-history" class="fullscreen-modal">
+  <div class="modal-header-custom">
+    <h5 class="fw-bold mb-0"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>ประวัติธุรกรรม</h5>
+    <button class="btn-close-custom" onclick="closeFullModal('modal-history')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="row g-2 mb-3">
+    <div class="col-5">
+      <select id="filter-month" class="form-select form-select-sm bg-light border-0 py-2">
+        <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option><option value="3">มีนาคม</option>
+        <option value="4">เมษายน</option><option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
+        <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option><option value="9">กันยายน</option>
+        <option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+      </select>
+    </div>
+    <div class="col-4">
+      <select id="filter-year" class="form-select form-select-sm bg-light border-0 py-2">
+        <option value="2026">2026</option><option value="2025">2025</option>
+      </select>
+    </div>
+    <div class="col-3">
+      <button class="btn btn-primary btn-sm w-100 h-100 rounded-2" onclick="loadHistory()"><i class="fa-solid fa-filter"></i></button>
+    </div>
+  </div>
+  <button class="btn btn-outline-success btn-sm w-100 mb-3 py-2 rounded-3" onclick="downloadStatement()"><i class="fa-solid fa-file-excel me-2"></i>ดาวน์โหลด Statement</button>
+  <div id="tx-list" class="list-group list-group-flush"></div>
+</div>
+
+<div class="modal fade" id="detailSlipModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 rounded-4 shadow-lg">
+      <div class="modal-body p-4 text-center">
+        <div id="slip-icon-area" class="mb-2"></div>
+        <h5 class="fw-bold">บันทึกรายการสำเนา</h5>
+        <p class="text-muted small mb-3" id="slip-type-badge"></p>
+        <div class="card bg-light p-3 text-start border-0 rounded-3 mb-3" style="font-size:13px;">
+          <div class="d-flex justify-content-between mb-1"><strong>รหัสอ้างอิง:</strong> <span id="dtl-txid">-</span></div>
+          <div class="d-flex justify-content-between mb-1"><strong>รายละเอียด:</strong> <span id="dtl-detail">-</span></div>
+          <div class="d-flex justify-content-between mb-1"><strong>วันเวลาทำรายการ:</strong> <span id="dtl-date">-</span></div>
+          <div id="dtl-products-section" class="d-none mt-2 pt-2 border-top border-secondary-subtle">
+            <h6 class="fw-bold text-secondary mb-2" style="font-size:12px;"><i class="fa-solid fa-basket-shopping me-1"></i> รายการสินค้า</h6>
+            <div id="dtl-products-list" style="font-size:12px; color:#4a5568;"></div>
+          </div>
+          <hr class="my-2">
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <strong>จำนวนเงินรวม:</strong>
+            <h3 class="fw-bold text-dark mb-0">฿<span id="dtl-amount">0.00</span></h3>
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary w-100 py-2 rounded-3" data-bs-dismiss="modal">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // 🔗 ระบบได้ผูกลิงก์เซิร์ฟเวอร์หลังบ้าน (Google Apps Script API) ของคุณให้เรียบร้อยแล้ว
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw96OeypnEruBxcg91RdIe8PennOP2VY_FOeFUvdPlrychZpu3e2s8fIaVxGuYpRupTPQ/exec";
+
+  // ดึงรหัสไอดีบัญชีจากพารามิเตอร์ URL ของหน้าเว็บ (?id=xxxx)
+  const urlParams = new URLSearchParams(window.location.search);
+  const currentStudentId = urlParams.get('id') || "";
+
+  let currentStudent = null;
+  let targetStudent = null;
+  let qrScannerInstance = null; 
+  let currentHistoryData = [];
+
+  document.getElementById('filter-month').value = new Date().getMonth() + 1;
+
+  // ฟังก์ชันกลางประสานข้อมูล Fetch API ข้ามแพลตฟอร์ม
+  async function callBackendAPI(payload) {
+    const response = await fetch(GAS_API_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "text/plain;charset=utf-8" }
+    });
+    return await response.json();
+  }
+
+  window.addEventListener('load', async function() {
+    if(!currentStudentId) { showDenied(); return; }
+    try {
+      const res = await callBackendAPI({ action: 'verifyStudentOnLoad', studentId: currentStudentId });
+      document.getElementById('loading-screen').remove();
+      if(res.allowed) {
+        currentStudent = res.profile;
+        showDashboard(res.profile);
+        document.getElementById('bottom-bar').classList.remove('d-none');
+      } else { showDenied(); }
+    } catch(err) { showDenied(); }
+  });
+
+  function showDenied() {
+    document.getElementById('loading-screen').remove();
+    document.getElementById('denied-screen').classList.remove('d-none');
+    document.getElementById('bottom-bar').classList.add('d-none');
+  }
+
+  function showDashboard(profile) {
+    document.getElementById('main-dashboard').classList.remove('d-none');
+    document.getElementById('txt-student-name').innerText = profile.name;
+    document.getElementById('txt-student-id').innerText = profile.id;
+    document.getElementById('txt-wallet-balance').innerText = profile.wallet.toFixed(2);
+    document.getElementById('txt-digital-balance').innerText = profile.digital.toFixed(2);
+    document.getElementById('txt-digital-limit').innerText = profile.dailyDigitalLimit.toFixed(2);
+  }
+
+  async function refreshBalances() {
+    const profile = await callBackendAPI({ action: 'findFriend', studentId: currentStudentId });
+    if(profile) { currentStudent = profile; showDashboard(profile); }
+  }
+
+  function openFullModal(modalId) { document.getElementById(modalId).classList.add('active'); }
+  function closeFullModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
+
+  // --- ระบบกล้องถ่ายรูปแบบความเสถียรสูงไร้กรอบแซนด์บ็อกซ์ ---
+  function triggerPermissionPrompt() {
+    document.getElementById('camera-permission-box').classList.remove('d-none');
+    document.getElementById('camera-permission-box').classList.add('d-flex');
+  }
+
+  function requestAndStartCamera() {
+    const videoElem = document.getElementById('preview-video');
+    qrScannerInstance = new QrScanner(videoElem, result => handleQRSuccess(result.data), {
+      highlightScanRegion: true, highlightCodeOutline: true
+    });
+
+    qrScannerInstance.start().then(() => {
+      document.getElementById('camera-permission-box').classList.remove('d-flex');
+      document.getElementById('camera-permission-box').classList.add('d-none');
+    }).catch(err => {
+      Swal.fire('กล้องถูกบล็อก', 'กรุณาอนุญาตสิทธิ์กล้องในเบราว์เซอร์', 'error');
+      stopRealtimeScanner(); closeFullModal('modal-qr');
+    });
+  }
+
+  function stopRealtimeScanner() {
+    if(qrScannerInstance) { qrScannerInstance.stop(); qrScannerInstance.destroy(); qrScannerInstance = null; }
+    document.getElementById('camera-permission-box').classList.remove('d-none');
+    document.getElementById('camera-permission-box').classList.add('d-flex');
+  }
+
+  function handleQRSuccess(data) {
+    stopRealtimeScanner(); closeFullModal('modal-qr'); openFullModal('modal-transfer');
+    document.getElementById('friend-id-input').value = data; searchFriend('friend-id-input');
+  }
+
+  // --- ค้นหาเพื่อน / ยืนยันธุรกรรม ---
+  async function searchFriend(inputId) {
+    const friendId = document.getElementById(inputId).value;
+    if(!friendId) return Swal.fire('คำเตือน', 'กรุณาระบุเลขบัญชี', 'warning');
+    if(friendId === currentStudent.id.toString()) return Swal.fire('ผิดพลาด', 'ห้ามโอนให้ตนเอง', 'error');
+
+    Swal.fire({ title: 'กำลังตรวจสอบบัญชี...', didOpen: () => Swal.showLoading() });
+    const friend = await callBackendAPI({ action: 'findFriend', studentId: friendId });
+    Swal.close();
+    
+    if(friend) {
+      targetStudent = friend;
+      document.getElementById('target-name').innerText = friend.name;
+      document.getElementById('target-id').innerText = friend.id;
+      document.getElementById('friend-info-box').classList.remove('d-none');
+      document.getElementById('transfer-amount').removeAttribute('disabled');
+      document.getElementById('btn-submit-transfer').removeAttribute('disabled');
+      document.getElementById('transfer-amount').focus();
+    } else {
+      Swal.fire('ปฏิเสธการทำรายการ', 'ไม่พบเลขที่บัญชีนี้', 'error'); resetTransferFields();
+    }
+  }
+
+  function resetTransferFields() {
+    targetStudent = null; document.getElementById('friend-info-box').classList.add('d-none');
+    document.getElementById('transfer-amount').setAttribute('disabled', true);
+    document.getElementById('btn-submit-transfer').setAttribute('disabled', true);
+    document.getElementById('transfer-amount').value = ''; document.getElementById('friend-id-input').value = '';
+  }
+
+  function confirmTransfer() {
+    const amount = parseFloat(document.getElementById('transfer-amount').value);
+    if(!amount || amount <= 0) return Swal.fire('ผิดพลาด', 'จำนวนเงินไม่ถูกต้อง', 'error');
+    if(amount > currentStudent.wallet) return Swal.fire('ผิดพลาด', 'ยอดเงินไม่เพียงพอ', 'error');
+
+    Swal.fire({
+      title: 'ยืนยันโอนเงิน',
+      text: `ต้องการโอน ฿${amount.toFixed(2)} ไปยังบัญชีคุณ ${targetStudent.name}?`,
+      icon: 'warning', showCancelButton: true, confirmButtonText: 'โอนเงิน', cancelButtonText: 'ยกเลิก'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        Swal.fire({ title: 'กำลังนำส่งธุรกรรม...', didOpen: () => Swal.showLoading() });
+        const res = await callBackendAPI({ action: 'transferMoney', fromId: currentStudent.id, toId: targetStudent.id, amount: amount });
+        Swal.close();
+        if(res.status === 'success') {
+          closeFullModal('modal-transfer'); resetTransferFields(); refreshBalances();
+          showDetailSlip({ id: res.txId, type: 'เงินออก', detail: 'โอนให้บัญชี ' + res.toName, amount: res.amount, date: res.date, items: null });
+        } else { Swal.fire('ล้มเหลว', res.message, 'error'); }
+      }
+    });
+  }
+
+  // --- โหลดสเตทเมนต์ประวัติธุรกรรม ---
+  async function loadHistory() {
+    const month = document.getElementById('filter-month').value;
+    const year = document.getElementById('filter-year').value;
+    const txListContainer = document.getElementById('tx-list');
+    txListContainer.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm"></div></div>';
+
+    const history = await callBackendAPI({ action: 'getTransactionHistory', studentId: currentStudent.id, month: month, year: year });
+    currentHistoryData = history;
+    txListContainer.innerHTML = '';
+    
+    if(history.length === 0) {
+      txListContainer.innerHTML = '<small class="text-center text-muted my-3 d-block">ไม่มีรายการเดินบัญชี</small>';
+      return;
+    }
+    history.forEach((tx, index) => {
+      const isIncome = tx.type === 'เงินเข้า';
+      const html = `
+        <div class="history-item" onclick="viewDetailByIndex(${index})">
+          <div>
+            <span class="fw-bold mb-0 small d-block text-truncate" style="max-width:280px;">${tx.detail}</span>
+            <small class="text-muted" style="font-size:11px;">${tx.date}</small>
+          </div>
+          <div class="text-end">
+            <span class="fw-bold ${isIncome ? 'text-success' : 'text-danger'}">${isIncome ? '+' : '-'}฿${tx.amount.toFixed(2)}</span>
+          </div>
+        </div>`;
+      txListContainer.insertAdjacentHTML('beforeend', html);
+    });
+  }
+
+  function viewDetailByIndex(index) { const tx = currentHistoryData[index]; if(tx) showDetailSlip(tx); }
+
+  function showDetailSlip(tx) {
+    document.getElementById('dtl-txid').innerText = tx.id;
+    document.getElementById('dtl-detail').innerText = tx.detail;
+    document.getElementById('dtl-date').innerText = tx.date;
+    document.getElementById('dtl-amount').innerText = tx.amount.toFixed(2);
+    const iconArea = document.getElementById('slip-icon-area');
+    const badgeType = document.getElementById('slip-type-badge');
+    
+    if(tx.type === 'เงินเข้า') {
+      iconArea.innerHTML = '<i class="fa-solid fa-circle-arrow-down fa-3x text-success"></i>';
+      badgeType.innerHTML = '<span class="badge bg-success-subtle text-success px-3">เงินเข้า</span>';
+    } else {
+      iconArea.innerHTML = '<i class="fa-solid fa-circle-arrow-up fa-3x text-danger"></i>';
+      badgeType.innerHTML = '<span class="badge bg-danger-subtle text-danger px-3">เงินออก</span>';
+    }
+    new bootstrap.Modal(document.getElementById('detailSlipModal')).show();
+  }
+
+  function downloadStatement() {
+    if(currentHistoryData.length === 0) return Swal.fire('คำเตือน', 'ไม่มีข้อมูลบัญชี', 'warning');
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+    csvContent += "รหัสอ้างอิง,ประเภท,รายละเอียดรายการ,ยอดเงินสุทธิ,วันเวลา\n";
+    currentHistoryData.forEach(r => { csvContent += `"${r.id}","${r.type}","${r.detail}",${r.amount},"${r.date}"\n`; });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Statement_${currentStudent.id}.csv`);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  }
+</script>
+</body>
+</html>
