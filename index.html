@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Mutec Smart Wallet</title>
+  <title>Smart Wallet</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -31,7 +31,7 @@
     .modal-header-custom { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
     .btn-close-custom { background: #f1f5f9; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; }
     
-    /* 📱 สไตล์หน้าต่างสแกนคิวอาร์โค้ดแบบเต็มจอระดับพรีเมียม (สไตล์แอปธนาคาร) */
+    /* สไตล์หน้าต่างสแกนคิวอาร์โค้ดแบบเต็มจอ */
     .qr-modal-bg { background: #000000 !important; padding: 0 !important; overflow: hidden !important; }
     .qr-header-overlay { position: absolute; top: 0; left: 0; width: 100%; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%); }
     .qr-header-title { color: #ffffff; font-weight: 600; margin: 0; font-size: 18px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
@@ -44,7 +44,7 @@
     .video-fullscreen-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5; }
     #preview-video { width: 100%; height: 100%; object-fit: cover; }
     
-    /* ช่องเล็งเป้า (Scanning Target Frame) กลางหน้าจอ */
+    /* ช่องเล็งเป้ากลางหน้าจอ */
     .qr-scanner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
     .scan-box-finder { width: 260px; height: 260px; border: 2px solid rgba(255, 255, 255, 0.4); position: relative; box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.6); border-radius: 16px; }
     
@@ -115,8 +115,8 @@
       <div class="d-flex align-items-center">
         <div class="text-primary me-3"><i class="fa-solid fa-shield-halved fa-2x"></i></div>
         <div>
-          <h6 class="fw-bold mb-1" style="font-size:13px;">เครือข่ายภายนอก (GitHub Pages)</h6>
-          <small class="text-muted d-block" style="font-size:11px;">กล้องทำงานแบบ Native ขยายเต็มกรอบ พร้อมระบบเลือกรูปภาพผ่านคลังในอุปกรณ์</small>
+          <h6 class="fw-bold mb-1" style="font-size:13px;">การรักษาความปลอดภัยขั้นสูง</h6>
+          <small class="text-muted d-block" style="font-size:11px;">ระบบถูกออกแบบให้ใช้กับร้านค้าภายในโรงเรียนเท่านั้น</small>
         </div>
       </div>
     </div>
@@ -160,13 +160,11 @@
 </div>
 
 <div id="modal-qr" class="fullscreen-modal qr-modal-bg">
-  
   <div class="qr-header-overlay">
     <button class="btn-close-custom bg-dark text-white" style="background: rgba(0,0,0,0.5) !important;" onclick="stopRealtimeScanner(); closeFullModal('modal-qr');">
       <i class="fa-solid fa-xmark"></i>
     </button>
     <h5 class="qr-header-title">สแกนคิวอาร์โค้ด</h5>
-    
     <button class="btn-gallery-trigger" onclick="document.getElementById('gallery-file-input').click();" title="เลือกรูปภาพจากคลัง">
       <i class="fa-regular fa-image" style="font-size: 18px;"></i>
     </button>
@@ -305,12 +303,11 @@
   function openFullModal(modalId) { document.getElementById(modalId).classList.add('active'); }
   function closeFullModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
 
-  // --- ⚡ ระบบสแกนผ่านกล้องสดแบบเต็มจอ (Full Screen Native Camera) ---
   function autoStartCameraDirectly() {
     const videoElem = document.getElementById('preview-video');
     
     qrScannerInstance = new QrScanner(videoElem, result => handleQRSuccess(result.data), {
-      highlightScanRegion: false, // ปิดกรอบไฮไลท์ดีฟอลต์สีเหลืองของไลบรารี เพื่อใช้กรอบสไตล์แอปธนาคารที่เราออกแบบเอง
+      highlightScanRegion: false, 
       highlightCodeOutline: false,
       maxScansPerSecond: 10
     });
@@ -328,17 +325,15 @@
       qrScannerInstance.destroy(); 
       qrScannerInstance = null; 
     }
-    document.getElementById('gallery-file-input').value = ""; // รีเซ็ตตัวเลือกไฟล์คลังภาพ
+    document.getElementById('gallery-file-input').value = "";
   }
 
-  // --- 🖼️ ฟังก์ชันเลือกไฟล์รูปภาพจากคลังเพื่อเอามาสแกนถอดรหัสรหัสบัญชี ---
   function scanQRFromGallery(inputElement) {
     if (inputElement.files && inputElement.files[0]) {
       const file = inputElement.files[0];
       
       Swal.fire({ title: 'กำลังอ่านภาพคิวอาร์...', didOpen: () => Swal.showLoading() });
       
-      // ใช้ความสามารถ Static Method ของ QrScanner ในการถอดรหัสรูปภาพโดยตรงไม่ต้องเปิดกล้อง
       QrScanner.scanImage(file)
         .then(result => {
           Swal.close();
@@ -347,7 +342,7 @@
         .catch(err => {
           Swal.close();
           Swal.fire('ไม่พบรหัสคิวอาร์', 'รูปภาพนี้ไม่มี QR Code หรือระบบไม่สามารถอ่านค่าได้ กรุณาลองใหม่อีกครั้ง', 'error');
-          inputElement.value = ""; // ล้างค่าเดิม
+          inputElement.value = "";
         });
     }
   }
@@ -360,7 +355,6 @@
     searchFriend('friend-id-input');
   }
 
-  // --- ค้นหาเพื่อน / ยืนยันธุรกรรม ---
   async function searchFriend(inputId) {
     const friendId = document.getElementById(inputId).value;
     if(!friendId) return Swal.fire('คำเตือน', 'กรุณาระบุเลขบัญชี', 'warning');
@@ -416,7 +410,6 @@
     });
   }
 
-  // --- โหลดสเตทเมนต์ประวัติธุรกรรม ---
   async function loadHistory() {
     const month = document.getElementById('filter-month').value;
     const year = document.getElementById('filter-year').value;
@@ -449,37 +442,4 @@
 
   function viewDetailByIndex(index) { const tx = currentHistoryData[index]; if(tx) showDetailSlip(tx); }
 
-  function showDetailSlip(tx) {
-    document.getElementById('dtl-txid').innerText = tx.id;
-    document.getElementById('dtl-detail').innerText = tx.detail;
-    document.getElementById('dtl-date').innerText = tx.date;
-    document.getElementById('dtl-amount').innerText = tx.amount.toFixed(2);
-    const iconArea = document.getElementById('slip-icon-area');
-    const badgeType = document.getElementById('slip-type-badge');
-    
-    if(tx.type === 'เงินเข้า') {
-      iconArea.innerHTML = '<i class="fa-solid fa-circle-arrow-down fa-3x text-success"></i>';
-      badgeType.innerHTML = '<span class="badge bg-success-subtle text-success px-3">เงินเข้า</span>';
-    } else {
-      iconArea.innerHTML = '<i class="fa-solid fa-circle-arrow-up fa-3x text-danger"></i>';
-      badgeType.innerHTML = '<span class="badge bg-danger-subtle text-danger px-3">เงินออก</span>';
-    }
-    new bootstrap.Modal(document.getElementById('detailSlipModal')).show();
-  }
-
-  function downloadStatement() {
-    if(currentHistoryData.length === 0) return Swal.fire('คำเตือน', 'ไม่มีข้อมูลบัญชี', 'warning');
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-    csvContent += "รหัสอ้างอิง,ประเภท,รายละเอียดรายการ,ยอดเงินสุทธิ,วันเวลา\n";
-    currentHistoryData.forEach(r => { csvContent += `"${r.id}","${r.type}","${r.detail}",${r.amount},"${r.date}"\n`; });
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Statement_${currentStudent.id}.csv`);
-    document.body.appendChild(link); 
-    link.click(); 
-    document.body.removeChild(link);
-  }
-</script>
-</body>
-</html>
+  UX/UI การออกแบบการสตรีมภาพและกล่องข้อความความปลอดภัยเปลี่ยนไปแสดงตามบริบทเรียบร้อยครับ! หากนำไปดีพลอยบน GitHub Pages แล้วมีส่วนใดที่อยากปรับจูนเพิ่มเติม แจ้งได้ทันทีเลยครับคุณเอกวิทย์!
