@@ -123,7 +123,7 @@
   </div>
 
   <div id="bottom-bar" class="bottom-nav d-none">
-    <button class="nav-item-btn" onclick="openTransferMode()">
+    <button class="nav-item-btn" onclick="openFullModal('modal-transfer')">
       <i class="fa-solid fa-money-bill-transfer"></i>โอนเงิน
     </button>
     <button class="nav-item-btn qr-center" onclick="openFullModal('modal-qr'); autoStartCameraDirectly();">
@@ -137,30 +137,26 @@
 
 <div id="modal-transfer" class="fullscreen-modal">
   <div class="modal-header-custom">
-    <h5 class="fw-bold mb-0" id="transfer-modal-title"><i class="fa-solid fa-paper-plane me-2 text-primary"></i>โอนเงิน</h5>
+    <h5 class="fw-bold mb-0"><i class="fa-solid fa-paper-plane me-2 text-primary"></i>โอนเงิน</h5>
     <button class="btn-close-custom" onclick="closeFullModal('modal-transfer'); resetTransferFields();"><i class="fa-solid fa-xmark"></i></button>
   </div>
-  
-  <div class="mb-3" id="destination-account-section">
+  <div class="mb-3">
     <label class="form-label small fw-bold">ระบุเลขที่บัญชีปลายทาง</label>
     <div class="input-group">
       <input type="number" id="friend-id-input" class="form-control form-control-lg" placeholder="กรอกเลขบัญชีปลายทาง">
       <button class="btn btn-primary px-4" type="button" onclick="searchFriend('friend-id-input')"><i class="fa-solid fa-magnifying-glass"></i></button>
     </div>
   </div>
-  
   <div id="friend-info-box" class="card bg-light border-0 p-3 mb-3 d-none rounded-3">
-    <small class="text-muted d-block" id="info-box-label">ชื่อบัญชีผู้รับเงิน</small>
+    <small class="text-muted d-block">ชื่อบัญชีผู้รับเงิน</small>
     <h6 class="fw-bold text-dark mb-1" id="target-name">-</h6>
-    <small class="text-muted"><span id="info-box-sublabel">เลขบัญชี:</span> <span id="target-id">-</span></small>
+    <small class="text-muted">เลขบัญชี: <span id="target-id">-</span></small>
   </div>
-  
   <div class="mb-4">
-    <label class="form-label small fw-bold">จำนวนเงิน (บาท)</label>
+    <label class="form-label small fw-bold">จำนวนเงินโอน (บาท)</label>
     <input type="number" id="transfer-amount" class="form-control form-control-lg text-center fw-bold text-primary" placeholder="0.00" disabled style="font-size: 24px;">
   </div>
-  
-  <button id="btn-submit-transfer" class="btn btn-success w-100 py-3 fw-bold rounded-3" onclick="executeSubmitAction()" disabled>ยืนยันรายการ</button>
+  <button id="btn-submit-transfer" class="btn btn-success w-100 py-3 fw-bold rounded-3" onclick="confirmTransfer()" disabled>โอนเงิน</button>
 </div>
 
 <div id="modal-qr" class="fullscreen-modal qr-modal-bg">
@@ -190,7 +186,7 @@
       <div class="scan-corner bottom-right"></div>
       <div class="scan-laser"></div>
     </div>
-    <div class="scan-hint-text">วางคิวอาร์โค้ดร้านค้า หรือเพื่อนในกรอบ หรือเลือกจากคลังภาพ</div>
+    <div class="scan-hint-text">วางคิวอาร์โค้ดให้อยู่ในกรอบ หรือแตะไอคอนรูปภาพเพื่อเลือกรูปจากคลัง</div>
   </div>
 </div>
 
@@ -259,10 +255,6 @@
 
   let currentStudent = null;
   let targetStudent = null;
-  let targetShop = null; // สำหรับเก็บข้อมูลกรณีโอนให้ร้านค้า
-  let currentTransactionMode = "transfer"; // "transfer" (โอนให้เพื่อน) หรือ "pay_shop" (จ่ายเงินให้ร้านค้า)
-  let autoFilledAmount = 0; // ยอดเงินโอนอัตโนมัติจาก QR ร้านค้า
-
   let qrScannerInstance = null; 
   let currentHistoryData = [];
 
@@ -313,22 +305,12 @@
   function openFullModal(modalId) { document.getElementById(modalId).classList.add('active'); }
   function closeFullModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
 
-  // ควบคุมการเปิดหน้าต่างทำรายการแบบปกติ (กดปุ่มโอนเงินธรรมดา)
-  function openTransferMode() {
-    currentTransactionMode = "transfer";
-    document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-paper-plane me-2 text-primary"></i>โอนเงิน';
-    document.getElementById('destination-account-section').classList.remove('d-none');
-    document.getElementById('info-box-label').innerText = "ชื่อบัญชีผู้รับเงิน";
-    document.getElementById('info-box-sublabel').innerText = "เลขบัญชี:";
-    openFullModal('modal-transfer');
-  }
-
-  // --- ⚡ ระบบสแกนผ่านกล้องสดแบบเต็มจอ ---
+  // --- ⚡ ระบบสแกนผ่านกล้องสดแบบเต็มจอ (Full Screen Native Camera) ---
   function autoStartCameraDirectly() {
     const videoElem = document.getElementById('preview-video');
     
     qrScannerInstance = new QrScanner(videoElem, result => handleQRSuccess(result.data), {
-      highlightScanRegion: false,
+      highlightScanRegion: false, // ปิดกรอบไฮไลท์ดีฟอลต์สีเหลืองของไลบรารี เพื่อใช้กรอบสไตล์แอปธนาคารที่เราออกแบบเอง
       highlightCodeOutline: false,
       maxScansPerSecond: 10
     });
@@ -346,16 +328,17 @@
       qrScannerInstance.destroy(); 
       qrScannerInstance = null; 
     }
-    document.getElementById('gallery-file-input').value = "";
+    document.getElementById('gallery-file-input').value = ""; // รีเซ็ตตัวเลือกไฟล์คลังภาพ
   }
 
-  // --- 🖼️ ฟังก์ชันเลือกไฟล์รูปภาพจากคลังเพื่อเอามาสแกนถอดรหัส ---
+  // --- 🖼️ ฟังก์ชันเลือกไฟล์รูปภาพจากคลังเพื่อเอามาสแกนถอดรหัสรหัสบัญชี ---
   function scanQRFromGallery(inputElement) {
     if (inputElement.files && inputElement.files[0]) {
       const file = inputElement.files[0];
       
       Swal.fire({ title: 'กำลังอ่านภาพคิวอาร์...', didOpen: () => Swal.showLoading() });
       
+      // ใช้ความสามารถ Static Method ของ QrScanner ในการถอดรหัสรูปภาพโดยตรงไม่ต้องเปิดกล้อง
       QrScanner.scanImage(file)
         .then(result => {
           Swal.close();
@@ -364,72 +347,20 @@
         .catch(err => {
           Swal.close();
           Swal.fire('ไม่พบรหัสคิวอาร์', 'รูปภาพนี้ไม่มี QR Code หรือระบบไม่สามารถอ่านค่าได้ กรุณาลองใหม่อีกครั้ง', 'error');
-          inputElement.value = "";
+          inputElement.value = ""; // ล้างค่าเดิม
         });
     }
   }
 
-  // 🎯 ฟังก์ชันดักและคัดแยกข้อมูล QR Code (Smart Router)
   function handleQRSuccess(data) {
     stopRealtimeScanner(); 
     closeFullModal('modal-qr'); 
-    
-    // ตรวจสอบโครงสร้างข้อมูลว่าเป็นการแพ็กค่าชำระเงินของร้านค้าหรือไม่ (เช่น SHOP01,25.00)
-    if (data.includes(",")) {
-      const parts = data.split(",");
-      const shopId = parts[0].trim();
-      const amount = parseFloat(parts[1].trim()) || 0;
-      
-      if(shopId && amount > 0) {
-        // เปลี่ยนโหมดเป็นจ่ายเงินให้ร้านค้าแบบออโต้
-        currentTransactionMode = "pay_shop";
-        autoFilledAmount = amount;
-        
-        // เซ็ตอัปหน้าต่าง UI รอไว้
-        document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-store me-2 text-success"></i>ชำระค่าสินค้า/บริการ';
-        document.getElementById('destination-account-section').classList.add('d-none'); // ซ่อนช่องพิมพ์เลขบัญชี
-        document.getElementById('info-box-label').innerText = "ร้านค้าผู้รับเงิน";
-        document.getElementById('info-box-sublabel').innerText = "รหัสร้านค้า:";
-        
-        openFullModal('modal-transfer');
-        searchShopDirectly(shopId, amount);
-        return;
-      }
-    }
-    
-    // หากไม่ใช่รูปแบบร้านค้า ให้ถือเป็นเลขบัญชีโอนเงินให้เพื่อนปกติ
-    openTransferMode();
+    openFullModal('modal-transfer');
     document.getElementById('friend-id-input').value = data; 
     searchFriend('friend-id-input');
   }
 
-  // ค้นหาข้อมูลร้านค้าและกรอกจำนวนเงินอัตโนมัติ
-  async function searchShopDirectly(shopId, amount) {
-    Swal.fire({ title: 'กำลังตรวจสอบข้อมูลร้านค้า...', didOpen: () => Swal.showLoading() });
-    // ใช้ action: 'verifyShopLogin' เพื่อตรวจสอบและดึงชื่อร้านค้าจากระบบหลังบ้านที่มีอยู่แล้ว
-    const res = await callBackendAPI({ action: 'verifyShopLogin', shopId: shopId });
-    Swal.close();
-    
-    if (res && res.allowed) {
-      targetShop = res.shopInfo;
-      document.getElementById('target-name').innerText = res.shopInfo.name;
-      document.getElementById('target-id').innerText = res.shopInfo.id;
-      document.getElementById('friend-info-box').classList.remove('d-none');
-      
-      // กรอกจำนวนเงินให้อัตโนมัติและล็อกอินพุตไว้ ป้องกันการแก้ไขตัวเลข
-      const amountInput = document.getElementById('transfer-amount');
-      amountInput.value = amount.toFixed(2);
-      amountInput.setAttribute('disabled', true); 
-      
-      document.getElementById('btn-submit-transfer').removeAttribute('disabled');
-    } else {
-      Swal.fire('ปฏิเสธการทำรายการ', res.message || 'ไม่พบข้อมูลบัญชีร้านค้านี้ในระบบ', 'error');
-      closeFullModal('modal-transfer');
-      resetTransferFields();
-    }
-  }
-
-  // --- ค้นหาเพื่อน ---
+  // --- ค้นหาเพื่อน / ยืนยันธุรกรรม ---
   async function searchFriend(inputId) {
     const friendId = document.getElementById(inputId).value;
     if(!friendId) return Swal.fire('คำเตือน', 'กรุณาระบุเลขบัญชี', 'warning');
@@ -454,8 +385,6 @@
 
   function resetTransferFields() {
     targetStudent = null; 
-    targetShop = null;
-    autoFilledAmount = 0;
     document.getElementById('friend-info-box').classList.add('d-none');
     document.getElementById('transfer-amount').setAttribute('disabled', true);
     document.getElementById('btn-submit-transfer').setAttribute('disabled', true);
@@ -463,16 +392,6 @@
     document.getElementById('friend-id-input').value = '';
   }
 
-  // ทำหน้าที่เป็นสวิตช์เลือกเรียกฟังก์ชันตามโหมดปัจจุบัน
-  function executeSubmitAction() {
-    if (currentTransactionMode === "pay_shop") {
-      confirmPayToShop();
-    } else {
-      confirmTransfer();
-    }
-  }
-
-  // 1. ตรรกะกรณีโอนเงินให้เพื่อนปกติ
   function confirmTransfer() {
     const amount = parseFloat(document.getElementById('transfer-amount').value);
     if(!amount || amount <= 0) return Swal.fire('ผิดพลาด', 'จำนวนเงินไม่ถูกต้อง', 'error');
@@ -493,55 +412,6 @@
           refreshBalances();
           showDetailSlip({ id: res.txId, type: 'เงินออก', detail: 'โอนให้บัญชี ' + res.toName, amount: res.amount, date: res.date, items: null });
         } else { Swal.fire('ล้มเหลว', res.message, 'error'); }
-      }
-    });
-  }
-
-  // 2. 🌟 ตรรกะกรณีสแกนจ่ายเงินเข้าร้านค้าแบบระบุยอดเงินอัตโนมัติ
-  function confirmPayToShop() {
-    const amount = autoFilledAmount;
-    // ตรวจสอบยอดกระเป๋ารวมทั้งหมดที่มี (เงินสดใน Wallet + เงินดิจิทัลทั้งหมด) ว่าพอชำระบิลนี้หรือไม่
-    const totalAvailableFund = currentStudent.wallet + currentStudent.digital;
-    
-    if(amount > totalAvailableFund) {
-      return Swal.fire('ยอดเงินไม่เพียงพอ', 'ยอดเงินสดและเงินดิจิทัลรวมกันไม่พอชำระค่าสินค้าบิลนี้', 'error');
-    }
-
-    Swal.fire({
-      title: 'ยืนยันชำระค่าสินค้า',
-      text: `ต้องการจ่ายเงินจำนวน ฿${amount.toFixed(2)} ให้กับร้าน "${targetShop.name}" หรือไม่? (ระบบจะประมวลผลหักจากกระเป๋าสวัสดิการตามโควตารายวันให้อัตโนมัติ)`,
-      icon: 'question', showCancelButton: true, confirmButtonText: 'ยืนยันชำระเงิน', cancelButtonText: 'ยกเลิก'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        Swal.fire({ title: 'กำลังประมวลผลหักบัญชี...', didOpen: () => Swal.showLoading() });
-        
-        // ยิงคำสั่งชำระเงินไปที่ระบบหลังบ้าน (รองรับ Split Payment แยกกระเป๋าโดยสมบูรณ์)
-        const res = await callBackendAPI({ 
-          action: 'processPayment', 
-          studentId: currentStudent.id, // ใช้ ID หรือส่งเป็นรหัสการ์ดตามโครงสร้าง POS ตัวเดิมของคุณเอกวิทย์
-          totalAmount: amount,
-          walletType: 'digital_quota', // ชี้แจงให้ระบบใช้ตรรกะหักผ่านโควตาสวัสดิการดิจิทัลก่อน
-          shopId: targetShop.id,
-          shopName: targetShop.name,
-          cartItems: [{ name: "ชำระเงินผ่าน QR หน้าแอปกระเป๋าตังค์", qty: 1, price: amount }]
-        });
-        
-        Swal.close();
-        if(res.status === 'success') {
-          closeFullModal('modal-transfer'); 
-          resetTransferFields(); 
-          refreshBalances();
-          showDetailSlip({ 
-            id: res.txId || ("TX_SHOP_" + new Date().getTime()), 
-            type: 'เงินออก', 
-            detail: 'ชำระค่าสินค้าให้ร้าน ' + res.shopName || targetShop.name, 
-            amount: amount, 
-            date: new Date().toLocaleString('th-TH'), 
-            items: null 
-          });
-        } else { 
-          Swal.fire('การชำระเงินล้มเหลว', res.message, 'error'); 
-        }
       }
     });
   }
@@ -610,13 +480,6 @@
     link.click(); 
     document.body.removeChild(link);
   }
-  // สั่งให้แอปรีเฟรชยอดเงินบนหน้าจออัตโนมัติทุกๆ 15 วินาที (15000 มิลลิวินาที)
-setInterval(function() {
-  // ตรวจสอบก่อนว่าล็อกอินสำเร็จและมีข้อมูลนักเรียนอยู่บนจอหรือไม่ เพื่อไม่ให้ยิง API ขัดจังหวะหน้าอื่น
-  if (currentStudentId && currentStudent) {
-    refreshBalances();
-  }
-}, 15000);
 </script>
 </body>
 </html>
