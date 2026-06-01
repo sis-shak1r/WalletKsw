@@ -428,26 +428,59 @@ async function handleQRSuccess(data) {
 }
 
 // ค้นหาร้านค้า
+// เรียกสืบค้นหาข้อมูลโปรไฟล์บัญชีของร้านค้าผู้รับเงิน
 async function searchShopDirectly(shopId, amount) {
-  Swal.fire({ title: 'กำลังตรวจสอบข้อมูลร้านค้า...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-  const res = await callBackendAPI({ action: 'verifyShopLogin', shopId: shopId });
-  Swal.close();
-  
-  if (res && res.allowed) {
-    targetShop = res.shopInfo; // เก็บข้อมูลร้านค้า
-    document.getElementById('target-name').innerText = res.shopInfo.name;
-    document.getElementById('target-id').innerText = res.shopInfo.id;
-    document.getElementById('friend-info-box').classList.remove('d-none');
-    
-    const amountInput = document.getElementById('transfer-amount');
-    amountInput.value = amount.toFixed(2);
-    amountInput.setAttribute('disabled', true); 
-    document.getElementById('btn-submit-transfer').removeAttribute('disabled');
-  } else {
-    Swal.fire('ปฏิเสธการทำรายการ', res.message || 'ไม่พบข้อมูลร้านค้านี้', 'error');
-    closeFullModal('modal-transfer');
-    resetTransferFields();
-  }
+    // 1. แสดง Loading ในระหว่างค้นหา
+    Swal.fire({ 
+        title: 'กำลังตรวจสอบข้อมูลร้านค้า...', 
+        allowOutsideClick: false, 
+        didOpen: () => Swal.showLoading() 
+    });
+
+    try {
+        // 2. เรียก API ไปยัง Backend
+        const res = await callBackendAPI({ action: 'verifyShopLogin', shopId: shopId });
+        Swal.close(); // ปิด Loading เมื่อได้ผลตอบกลับ
+        
+        // 3. ตรวจสอบว่าร้านค้ามีจริงหรือไม่ (allowed: true)
+        if (res && res.allowed) {
+            targetShop = res.shopInfo; // เก็บข้อมูลร้านค้าไว้ใช้งานตอนกดจ่ายเงิน
+            
+            // 4. อัปเดต UI ให้แสดงผลข้อมูลร้านค้าที่ค้นหาเจอทันที
+            document.getElementById('target-name').innerText = res.shopInfo.name;
+            document.getElementById('target-id').innerText = res.shopInfo.id;
+            
+            // แสดงส่วนที่เป็นกล่องข้อมูลร้านค้า (ทำให้มองเห็น)
+            const infoBox = document.getElementById('friend-info-box');
+            infoBox.classList.remove('d-none');
+            
+            // 5. จัดการช่องจำนวนเงิน (ล็อกไม่ให้แก้ไขถ้ามาจากการสแกน)
+            const amountInput = document.getElementById('transfer-amount');
+            amountInput.value = amount.toFixed(2);
+            amountInput.setAttribute('disabled', true); // ล็อกราคา
+            
+            // 6. เปิดปุ่มยืนยันการจ่ายเงิน
+            document.getElementById('btn-submit-transfer').removeAttribute('disabled');
+            
+            // เพิ่มการแจ้งเตือนเล็กๆ ว่าค้นหาสำเร็จ
+            Swal.fire({
+                icon: 'success',
+                title: 'พบร้านค้า!',
+                text: 'ร้าน ' + res.shopInfo.name + ' พร้อมรับชำระเงิน',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+        } else {
+            // กรณีไม่พบร้านค้า
+            Swal.fire('ปฏิเสธการทำรายการ', res.message || 'ไม่พบรหัสร้านค้านี้ในระบบ', 'error');
+            closeFullModal('modal-transfer');
+            resetTransferFields();
+        }
+    } catch (err) {
+        Swal.close();
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้: ' + err.message, 'error');
+    }
 }
 
 // ยืนยันการชำระเงินให้ร้านค้า
