@@ -252,6 +252,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+  // 🔗 เอนด์พอยต์ระบบประมวลผลธุรกรรมกลาง (Mutec Plus+ Core)
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw96OeypnEruBxcg91RdIe8PennOP2VY_FOeFUvdPlrychZpu3e2s8fIaVxGuYpRupTPQ/exec";
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -260,14 +261,16 @@
   let currentStudent = null;
   let targetStudent = null;
   let targetShop = null; 
-  let currentTransactionMode = "transfer"; 
+  let currentTransactionMode = "transfer"; // 'transfer' (โอนให้เพื่อน) หรือ 'pay_shop' (จ่ายร้านค้า)
   let autoFilledAmount = 0; 
 
   let qrScannerInstance = null; 
   let currentHistoryData = [];
 
+  // กำหนดตัวเลือกเดือนเริ่มต้นในหน้า Statement เป็นเดือนปัจจุบัน
   document.getElementById('filter-month').value = new Date().getMonth() + 1;
 
+  // 🌐 ฟังก์ชันกลางสำหรับสื่อสารกับระบบเซิร์ฟเวอร์หลังบ้าน (GAS API)
   async function callBackendAPI(payload) {
     const response = await fetch(GAS_API_URL, {
       method: "POST",
@@ -277,13 +280,14 @@
     return await response.json();
   }
 
-  // เริ่มต้นตรวจสถานะและโหลดโปรไฟล์ตอนเปิดแอปหน้าแรก
+  // 🚀 เริ่มต้นสแกนสิทธิ์ตรวจสอบบัญชีเมื่อแอปพลิเคชันพร้อมทำงาน
   window.addEventListener('load', async function() {
     if(!currentStudentId) { showDenied(); return; }
     try {
       const res = await callBackendAPI({ action: 'verifyStudentOnLoad', studentId: currentStudentId });
-      document.getElementById('loading-screen').remove();
-      if(res.allowed) {
+      if(document.getElementById('loading-screen')) document.getElementById('loading-screen').remove();
+      
+      if(res && res.allowed) {
         currentStudent = res.profile;
         showDashboard(res.profile);
         document.getElementById('bottom-bar').classList.remove('d-none');
@@ -294,6 +298,7 @@
   function showDenied() {
     if(document.getElementById('loading-screen')) document.getElementById('loading-screen').remove();
     document.getElementById('denied-screen').classList.remove('d-none');
+    document.getElementById('main-dashboard').classList.add('d-none');
     document.getElementById('bottom-bar').classList.add('d-none');
   }
 
@@ -306,30 +311,37 @@
     document.getElementById('txt-digital-limit').innerText = profile.dailyDigitalLimit.toFixed(2);
   }
 
-  // 🔄 ดึงข้อมูลปรับปรุงยอดแบบ Silent-Refresh เบื้องหลัง
+  // 🔄 อัปเดตข้อมูลยอดเงินบัญชีแบบ Silent-Refresh ทำงานเบื้องหลังเงียบๆ
   async function refreshBalances() {
     try {
+      if (!currentStudentId) return;
       const res = await callBackendAPI({ action: 'verifyStudentOnLoad', studentId: currentStudentId });
       if(res && res.allowed) { 
         currentStudent = res.profile; 
         showDashboard(res.profile); 
       }
-    } catch (e) { console.log("Silent refresh error: ", e); }
+    } catch (e) { console.log("Silent refresh network error: ", e); }
   }
 
   function openFullModal(modalId) { document.getElementById(modalId).classList.add('active'); }
   function closeFullModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
 
+  // 🧑‍🤝‍🧑 ฟังก์ชันเปิดหน้าต่างโอนเงินให้เพื่อนแบบกรอกระบุเลขมือ (Manual Mode)
   function openTransferMode() {
     currentTransactionMode = "transfer";
+    
+    // ตั้งค่าส่วนแสดงผล (UI Configuration)
     document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-paper-plane me-2 text-primary"></i>โอนเงินให้เพื่อน';
     document.getElementById('destination-account-section').classList.remove('d-none');
+    document.getElementById('wallet-select-section').classList.add('d-none'); // ซ่อนเมนูเลือกกระเป๋า บังคับหักเงินสดเท่านั้น
     document.getElementById('info-box-label').innerText = "ชื่อบัญชีผู้รับเงิน";
     document.getElementById('info-box-sublabel').innerText = "เลขบัญชี:";
+    document.getElementById('info-box-icon-container').innerHTML = '<i class="fa-solid fa-user-graduate"></i>';
+    
     openFullModal('modal-transfer');
   }
 
-  // --- ⚡ ระบบสแกนผ่านกล้องสดแบบเต็มจอ ---
+  // --- ⚡ ระบบควบคุมกล้องสแกนคิวอาร์โค้ดแบบเรียลไทม์ ---
   function autoStartCameraDirectly() {
     const videoElem = document.getElementById('preview-video');
     
@@ -340,7 +352,7 @@
     });
 
     qrScannerInstance.start().catch(err => {
-      Swal.fire('การเข้าถึงกล้องถูกปฏิเสธ', 'กรุณากดเปิดสิทธิ์ยอมรับให้เบราว์เซอร์ใช้งานกล้องถ่ายรูป', 'error');
+      Swal.fire('ไม่สามารถเข้าถึงกล้องถ่ายรูป', 'กรุณากดอนุญาตให้สิทธิ์การใช้งานกล้องกับแอปพลิเคชันบนเบราว์เซอร์ของคุณ', 'error');
       stopRealtimeScanner(); 
       closeFullModal('modal-qr');
     });
@@ -355,12 +367,11 @@
     document.getElementById('gallery-file-input').value = "";
   }
 
-  // --- 🖼️ ดึงรหัสคิวอาร์โค้ดจากคลังภาพของเครื่องมือถือ ---
+  // --- 🖼️ ถอดรหัสค่า QR Code จากรูปภาพในคลังภาพเครื่องสมาร์ตโฟน ---
   function scanQRFromGallery(inputElement) {
     if (inputElement.files && inputElement.files[0]) {
       const file = inputElement.files[0];
-      
-      Swal.fire({ title: 'กำลังอ่านภาพคิวอาร์...', didOpen: () => Swal.showLoading() });
+      Swal.fire({ title: 'กำลังประมวลผลรูปภาพ...', didOpen: () => Swal.showLoading() });
       
       QrScanner.scanImage(file)
         .then(result => {
@@ -369,35 +380,37 @@
         })
         .catch(err => {
           Swal.close();
-          Swal.fire('ไม่พบรหัสคิวอาร์', 'รูปภาพนี้ไม่มี QR Code หรือระบบไม่สามารถอ่านค่าได้ กรุณาลองใหม่อีกครั้ง', 'error');
+          Swal.fire('ไม่พบข้อมูล QR Code', 'ภาพที่เลือกไม่มีรหัสคิวอาร์ หรือคุณภาพรูปภาพต่ำเกินไป กรุณาลองใหม่อีกครั้ง', 'error');
           inputElement.value = "";
         });
     }
   }
 
-  // 🎯 ฟังก์ชันดักและคัดแยกข้อมูล QR Code (Smart Router - ฉบับปรับปรุงรองรับเครื่องหมายคำพูด)
+  // 🎯 ตัวถอดรหัสอัจฉริยะ (Smart Router) แยกประเภทร้านค้า หรือเพื่อนร่วมสถาบันอัตโนมัติ
   function handleQRSuccess(data) {
     stopRealtimeScanner(); 
     closeFullModal('modal-qr'); 
     
-    // ลบเครื่องหมายอัญประกาศคู่ (") ออกจากข้อความทั้งหมดก่อน เพื่อให้เหลือแค่ text เปล่าๆ เช่น shop01,20
+    // ทำความสะอาดข้อความ ขจัดเครื่องหมายฟันหนู (") ออกเพื่อรองรับฟอร์แมตข้อมูลดิบจาก POS
     let cleanData = data.replace(/"/g, '').trim();
     
-    // ตรวจสอบโครงสร้างข้อมูลว่ามีการคั่นด้วยเครื่องหมายจุลภาคหรือไม่
+    // เคสร้านค้า: ตรวจพบโครงสร้างระบุราคาสินค้าด้วยเครื่องหมายจุลภาคคั่น เช่น shop01,35
     if (cleanData.includes(",")) {
       const parts = cleanData.split(",");
       const shopId = parts[0].trim();
       const amount = parseFloat(parts[1].trim()) || 0;
       
       if(shopId && amount > 0) {
-        // สลับเข้าสู่โหมดจ่ายเงินให้ร้านค้าทันที
         currentTransactionMode = "pay_shop";
         autoFilledAmount = amount;
         
-        document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-store me-2 text-success"></i>ชำระค่าสินค้า/บริการ';
-        document.getElementById('destination-account-section').classList.add('d-none'); // ซ่อนช่องพิมพ์เลขบัญชี
-        document.getElementById('info-box-label').innerText = "ร้านค้าผู้รับเงิน";
+        // สลับ UI สู่หน้าต่างชำระเงินร้านค้าเต็มรูปแบบ
+        document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-store me-2 text-success"></i>ชำrateค่าสินค้า/บริการ';
+        document.getElementById('destination-account-section').classList.add('d-none'); // ซ่อนช่องระบุเลขบัญชี
+        document.getElementById('wallet-select-section').classList.remove('d-none'); // เปิดกล่องเลือกประเภทกระเป๋าเงิน
+        document.getElementById('info-box-label').innerText = "ร้านค้าผู้รับชำระเงิน";
         document.getElementById('info-box-sublabel').innerText = "รหัสร้านค้า:";
+        document.getElementById('info-box-icon-container').innerHTML = '<i class="fa-solid fa-store text-success"></i>';
         
         openFullModal('modal-transfer');
         searchShopDirectly(shopId, amount);
@@ -405,15 +418,15 @@
       }
     }
     
-    // หากไม่ใช่รูปแบบร้านค้า (ไม่มีเครื่องหมายจุลภาคคั่น) ให้ถือเป็นเลขบัญชีโอนเงินให้เพื่อนปกติ
+    // เคสบุคคล: ไม่พบเครื่องหมายจุลภาคคั่น ถือว่าเป็นรหัสประจำตัวเพื่อโอนเงินให้เพื่อนปกติ
     openTransferMode();
     document.getElementById('friend-id-input').value = cleanData; 
     searchFriend('friend-id-input');
   }
 
-  // เชื่อมต่อหลังบ้านดึงข้อมูลร้านค้าและเติมยอดชำระอัตโนมัติ
+  // ยืนยันตรวจสอบฐานข้อมูลร้านค้าหน้าร้านค้า
   async function searchShopDirectly(shopId, amount) {
-    Swal.fire({ title: 'กำลังตรวจสอบบัญชีร้านค้า...', didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: 'กำลังยืนยันพิกัดร้านค้า...', didOpen: () => Swal.showLoading() });
     const res = await callBackendAPI({ action: 'verifyShopLogin', shopId: shopId });
     Swal.close();
     
@@ -425,25 +438,23 @@
       
       const amountInput = document.getElementById('transfer-amount');
       amountInput.value = amount.toFixed(2);
-      amountInput.setAttribute('disabled', true); 
+      amountInput.setAttribute('disabled', true); // ล็อกหน้าช่องอินพุตห้ามแก้ไขยอดตามบิลร้านค้า
       
       document.getElementById('btn-submit-transfer').removeAttribute('disabled');
     } else {
-      Swal.fire('ปฏิเสธการเข้าทำรายการ', res.message || 'ไม่พบข้อมูลบัญชีร้านค้านี้ในระบบ', 'error');
+      Swal.fire('เกิดข้อผิดพลาด', res.message || 'ไม่พบบัญชีร้านค้านี้ลงทะเบียนในระบบจัดการ', 'error');
       closeFullModal('modal-transfer');
       resetTransferFields();
     }
   }
 
-  // --- ค้นหาเพื่อนผู้รับโอนเงิน ---
+  // ตรวจสอบฐานข้อมูลบัญชีเพื่อนผู้รับโอนเงิน
   async function searchFriend(inputId) {
-    const friendId = document.getElementById(inputId).value;
+    const friendId = document.getElementById(inputId).value.trim();
     if(!friendId) return Swal.fire('คำเตือน', 'กรุณาระบุเลขบัญชีปลายทาง', 'warning');
-    if(friendId === currentStudent.id.toString()) return Swal.fire('ข้อมูลไม่ถูกต้อง', 'ไม่สามารถทำรายการโอนเงินให้บัญชีตนเองได้', 'error');
+    if(friendId === currentStudent.id.toString()) return Swal.fire('ธุรกรรมไม่ถูกต้อง', 'คุณไม่สามารถทำการโอนเงินให้กับบัญชีตัวเองได้', 'error');
 
-    Swal.fire({ title: 'กำลังตรวจสอบบัญชีผู้รับ...', didOpen: () => Swal.showLoading() });
-    
-    // เปลี่ยนมาแมปให้ใช้งาน verifyStudentOnLoad สำหรับตรวจสอบโปรไฟล์เพื่อนเพื่อให้สัมพันธ์กับสเตตัสสากล
+    Swal.fire({ title: 'กำลังตรวจสอบสิทธิ์ปลายทาง...', didOpen: () => Swal.showLoading() });
     const res = await callBackendAPI({ action: 'verifyStudentOnLoad', studentId: friendId });
     Swal.close();
     
@@ -452,11 +463,15 @@
       document.getElementById('target-name').innerText = res.profile.name;
       document.getElementById('target-id').innerText = res.profile.id;
       document.getElementById('friend-info-box').classList.remove('d-none');
-      document.getElementById('transfer-amount').removeAttribute('disabled');
+      
+      const amountInput = document.getElementById('transfer-amount');
+      amountInput.removeAttribute('disabled'); // เปิดอิสระให้กรอกจำนวนเงินโอนเองได้
+      amountInput.value = '';
+      
       document.getElementById('btn-submit-transfer').removeAttribute('disabled');
-      document.getElementById('transfer-amount').focus();
+      amountInput.focus();
     } else {
-      Swal.fire('ไม่พบข้อมูลบัญชี', 'ไม่พบรหัสประจำตัวหรือเลขที่บัญชีนี้ในฐานข้อมูลสถาบัน', 'error'); 
+      Swal.fire('ไม่พบข้อมูลผู้รับ', 'ไม่พบรหัสสมาชิกหรือบัญชีนักเรียนนี้ในสถาบันศึกษา', 'error'); 
       resetTransferFields();
     }
   }
@@ -480,73 +495,78 @@
     }
   }
 
-  // 1. ตรรกะโอนเงินให้เพื่อน
+  // 1. กระบวนการยื่นส่งคำขอโอนเงินให้เพื่อน
   function confirmTransfer() {
     const amount = parseFloat(document.getElementById('transfer-amount').value);
-    if(!amount || amount <= 0) return Swal.fire('รูปแบบยอดเงินไม่ถูกต้อง', 'กรุณาระบุจำนวนเงินที่เป็นตัวเลขมากกว่า 0', 'error');
-    if(amount > currentStudent.wallet) return Swal.fire('การทำรายการล้มเหลว', 'ยอดเงินสดในกระเป๋า (Wallet) ของคุณไม่เพียงพอต่อการโอนครั้งนี้', 'error');
+    if(!amount || amount <= 0) return Swal.fire('ข้อมูลไม่ถูกต้อง', 'กรุณาระบุยอดเงินตัวเลขที่ถูกต้อง', 'error');
+    if(amount > currentStudent.wallet) return Swal.fire('ยอดเงินไม่เพียงพอ', 'ยอดเงินสดในกระเป๋า Wallet ไม่เพียงพอต่อการทำรายการโอนเงิน', 'error');
 
     Swal.fire({
-      title: 'ยืนยันการโอนเงิน',
-      text: `คุณต้องการโอนเงินจำนวน ฿${amount.toFixed(2)} ไปยังบัญชีคุณ ${targetStudent.name} ใช่หรือไม่?`,
+      title: 'ยืนยันทำรายการโอนเงิน?',
+      text: `คุณต้องการโอนเงินจำนวน ฿${amount.toFixed(2)} ให้แก่คุณ ${targetStudent.name} หรือไม่?`,
       icon: 'warning', 
       showCancelButton: true, 
-      confirmButtonText: 'ตกลง, โอนเงิน', 
+      confirmButtonText: 'ยืนยันโอนเงิน', 
       cancelButtonText: 'ยกเลิก',
       confirmButtonColor: '#007aff'
     }).then(async (result) => {
       if (result.isConfirmed) {
-        Swal.fire({ title: 'กำลังดำเนินการโอนเงิน...', didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังประมวลผลระบบธุรกรรม...', didOpen: () => Swal.showLoading() });
         const res = await callBackendAPI({ action: 'transferMoney', fromId: currentStudent.id, toId: targetStudent.id, amount: amount });
         Swal.close();
-        if(res.status === 'success') {
+        
+        if(res && res.status === 'success') {
           closeFullModal('modal-transfer'); 
           resetTransferFields(); 
           refreshBalances();
           showDetailSlip({ id: res.txId, type: 'เงินออก', detail: 'โอนให้บัญชี ' + res.toName, amount: res.amount, date: res.date, items: null });
-        } else { Swal.fire('ล้มเหลว', res.message, 'error'); }
+        } else { Swal.fire('ทำรายการล้มเหลว', res.message || 'เซิร์ฟเวอร์ปฏิเสธการโอนเงิน', 'error'); }
       }
     });
   }
 
-  // 2. 🌟 ตรรกะกรณีสแกนจ่ายเงินเข้าร้านค้าแบบดึงข้อมูลและกรอกยอดออโต้
+  // 2. กระบวนการยื่นส่งคำขอจ่ายเงินชำระบิิร้านค้า
   function confirmPayToShop() {
     const amount = autoFilledAmount;
-    const totalAvailableFund = currentStudent.wallet + currentStudent.digital;
+    const selectedWalletType = document.getElementById('wallet-type-select').value;
     
-    if(amount > totalAvailableFund) {
-      return Swal.fire('ยอดเงินรวมไม่เพียงพอ', 'ยอดเงินสดและสิทธิ์เงินดิจิทัลรวมกันไม่เพียงพอต่อการชำระบิลของร้านค้านี้', 'error');
+    // ตรวจเช็คกระเป๋าเงินที่เลือกชำระตามข้อกำหนดเงื่อนไขของยอดคงเหลือ
+    if (selectedWalletType === 'digital' && amount > currentStudent.digital) {
+      return Swal.fire('สิทธิ์เงินดิจิทัลไม่พอ', 'วงเงินสวัสดิการดิจิทัลคงเหลือวันนี้ไม่เพียงพอชำระบิลนี้ได้', 'error');
+    }
+    if (selectedWalletType === 'wallet' && amount > currentStudent.wallet) {
+      return Swal.fire('เงินสดคงเหลือไม่พอ', 'เงินสดคงเหลือในกระเป๋า Wallet ไม่เพียงพอชำระค่าสินค้าได้', 'error');
     }
 
     Swal.fire({
-      title: 'ยืนยันการชำระเงิน',
-      text: `คุณต้องการชำระเงินจำนวน ฿${amount.toFixed(2)} ให้กับ "${targetShop.name}" หรือไม่? (ระบบจะประมวลผลหักตัดกระเป๋าสิทธิ์สวัสดิการดิจิทัลรายวันให้โดยอัตโนมัติ)`,
+      title: 'ยืนยันชำระค่าสินค้า?',
+      text: `ต้องการชำระเงินยอด ฿${amount.toFixed(2)} ให้แก่ "${targetShop.name}" หรือไม่?`,
       icon: 'question', 
       showCancelButton: true, 
-      confirmButtonText: 'ยืนยันชำระเงิน', 
+      confirmButtonText: 'ตกลง, ยืนยันชำระเงิน', 
       cancelButtonText: 'ยกเลิก',
       confirmButtonColor: '#10B981'
     }).then(async (result) => {
       if (result.isConfirmed) {
-        Swal.fire({ title: 'กำลังติดต่อเซิร์ฟเวอร์เพื่อหักบัญชี...', didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังตัดยอดบัญชี...', didOpen: () => Swal.showLoading() });
         
+        // จับคู่ Payload และเรียกใช้ฟังก์ชัน processPayment กลางฝั่งเซิร์ฟเวอร์
         const res = await callBackendAPI({ 
           action: 'processPayment', 
           studentId: currentStudent.id, 
           totalAmount: amount,
-          walletType: 'digital_quota', 
+          walletType: selectedWalletType, // ส่งค่ากระเป๋าเงินที่เด็กเลือกจากหน้าแอปจริง ('digital' หรือ 'wallet')
           shopId: targetShop.id,
           shopName: targetShop.name,
           cartItems: [{ name: "ชำระเงินผ่าน QR หน้าแอปกระเป๋าตังค์", qty: 1, price: amount }]
         });
         
         Swal.close();
-        if(res.status === 'success') {
+        if(res && res.status === 'success') {
           closeFullModal('modal-transfer'); 
           resetTransferFields(); 
           refreshBalances();
           
-          // สรุปข้อมูลการจ่ายเงินลงบนใบเสร็จจำลองอิเล็กทรอนิกส์
           showDetailSlip({ 
             id: res.txId || ("TX_SHOP_" + new Date().getTime()), 
             type: 'เงินออก', 
@@ -556,41 +576,45 @@
             items: null 
           });
         } else { 
-          Swal.fire('การชำrateเงินล้มเหลว', res.message, 'error'); 
+          Swal.fire('ธุรกรรมถูกปฏิเสธ', res.message || 'ระบบไม่สามารถหักยอดบัญชีได้สำเร็จ', 'error'); 
         }
       }
     });
   }
 
-  // --- โหลดสเตทเมนต์ประวัติธุรกรรมประจำบุคคล ---
+  // --- ระบบดึงข้อมูลและจัดการใบรายการเดินบัญชี (Statement / History) ---
   async function loadHistory() {
     const month = document.getElementById('filter-month').value;
     const year = document.getElementById('filter-year').value;
     const txListContainer = document.getElementById('tx-list');
     txListContainer.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary spinner-border-sm"></div></div>';
 
-    const history = await callBackendAPI({ action: 'getTransactionHistory', studentId: currentStudent.id, month: month, year: year });
-    currentHistoryData = history;
-    txListContainer.innerHTML = '';
-    
-    if(history.length === 0) {
-      txListContainer.innerHTML = '<small class="text-center text-muted my-3 d-block">ไม่มีประวัติรายการเดินบัญชีในเดือนนี้</small>';
-      return;
+    try {
+      const history = await callBackendAPI({ action: 'getTransactionHistory', studentId: currentStudent.id, month: month, year: year });
+      currentHistoryData = history || [];
+      txListContainer.innerHTML = '';
+      
+      if(currentHistoryData.length === 0) {
+        txListContainer.innerHTML = '<small class="text-center text-muted my-3 d-block">ไม่มีประวัติรายการเดินบัญชีในเดือนนี้</small>';
+        return;
+      }
+      currentHistoryData.forEach((tx, index) => {
+        const isIncome = tx.type === 'เงินเข้า';
+        const html = `
+          <div class="history-item" onclick="viewDetailByIndex(${index})">
+            <div>
+              <span class="fw-bold mb-0 small d-block text-truncate" style="max-width:280px;">${tx.detail}</span>
+              <small class="text-muted" style="font-size:11px;">${tx.date}</small>
+            </div>
+            <div class="text-end">
+              <span class="fw-bold ${isIncome ? 'text-success' : 'text-danger'}">${isIncome ? '+' : '-'}฿${tx.amount.toFixed(2)}</span>
+            </div>
+          </div>`;
+        txListContainer.insertAdjacentHTML('beforeend', html);
+      });
+    } catch(err) {
+      txListContainer.innerHTML = '<small class="text-center text-danger my-3 d-block">การโหลดประวัติล้มเหลว</small>';
     }
-    history.forEach((tx, index) => {
-      const isIncome = tx.type === 'เงินเข้า';
-      const html = `
-        <div class="history-item" onclick="viewDetailByIndex(${index})">
-          <div>
-            <span class="fw-bold mb-0 small d-block text-truncate" style="max-width:280px;">${tx.detail}</span>
-            <small class="text-muted" style="font-size:11px;">${tx.date}</small>
-          </div>
-          <div class="text-end">
-            <span class="fw-bold ${isIncome ? 'text-success' : 'text-danger'}">${isIncome ? '+' : '-'}฿${tx.amount.toFixed(2)}</span>
-          </div>
-        </div>`;
-      txListContainer.insertAdjacentHTML('beforeend', html);
-    });
   }
 
   function viewDetailByIndex(index) { const tx = currentHistoryData[index]; if(tx) showDetailSlip(tx); }
@@ -627,7 +651,7 @@
     document.body.removeChild(link);
   }
 
-  // 🔄 ลูปลดภาระโหลดเซิร์ฟเวอร์อัปเดตข้อมูลอัตโนมัติเบื้องหลังทุกๆ 15 วินาที
+  // 🔄 ตลูปลดโหลดเซิร์ฟเวอร์เพื่อรีเฟรชยอดเงินคงเหลืออัตโนมัติทุกๆ 15 วินาที
   setInterval(function() {
     if (currentStudentId && currentStudent) {
       refreshBalances();
