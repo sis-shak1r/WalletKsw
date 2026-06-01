@@ -375,24 +375,27 @@
     }
   }
 
-  // 🎯 ตัวจำแนกและดักข้อมูล QR Code (Smart Router) รองรับค่าคั่นด้วยเครื่องหมาย Comma ของร้านค้า
+  // 🎯 ฟังก์ชันดักและคัดแยกข้อมูล QR Code (Smart Router - ฉบับปรับปรุงรองรับเครื่องหมายคำพูด)
   function handleQRSuccess(data) {
     stopRealtimeScanner(); 
     closeFullModal('modal-qr'); 
     
-    // ตรวจสอบรูปแบบข้อมูลว่าเป็นการเข้ารหัสของเครื่องร้านค้า (ตัวอย่าง: SHOP01,25.00)
-    if (data.includes(",")) {
-      const parts = data.split(",");
+    // ลบเครื่องหมายอัญประกาศคู่ (") ออกจากข้อความทั้งหมดก่อน เพื่อให้เหลือแค่ text เปล่าๆ เช่น shop01,20
+    let cleanData = data.replace(/"/g, '').trim();
+    
+    // ตรวจสอบโครงสร้างข้อมูลว่ามีการคั่นด้วยเครื่องหมายจุลภาคหรือไม่
+    if (cleanData.includes(",")) {
+      const parts = cleanData.split(",");
       const shopId = parts[0].trim();
       const amount = parseFloat(parts[1].trim()) || 0;
       
       if(shopId && amount > 0) {
+        // สลับเข้าสู่โหมดจ่ายเงินให้ร้านค้าทันที
         currentTransactionMode = "pay_shop";
         autoFilledAmount = amount;
         
-        // สลับโครงหน้ากาก UI เป็นหน้าชำระเงินร้านค้าสวัสดิการ
         document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-store me-2 text-success"></i>ชำระค่าสินค้า/บริการ';
-        document.getElementById('destination-account-section').classList.add('d-none'); 
+        document.getElementById('destination-account-section').classList.add('d-none'); // ซ่อนช่องพิมพ์เลขบัญชี
         document.getElementById('info-box-label').innerText = "ร้านค้าผู้รับเงิน";
         document.getElementById('info-box-sublabel').innerText = "รหัสร้านค้า:";
         
@@ -402,9 +405,9 @@
       }
     }
     
-    // หากสแกนติดเป็นรูปแบบธรรมดา ให้ประมวลผลเป็นรหัสบัญชีเพื่อโอนให้เพื่อน
+    // หากไม่ใช่รูปแบบร้านค้า (ไม่มีเครื่องหมายจุลภาคคั่น) ให้ถือเป็นเลขบัญชีโอนเงินให้เพื่อนปกติ
     openTransferMode();
-    document.getElementById('friend-id-input').value = data; 
+    document.getElementById('friend-id-input').value = cleanData; 
     searchFriend('friend-id-input');
   }
 
