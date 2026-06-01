@@ -610,6 +610,13 @@
     link.click(); 
     document.body.removeChild(link);
   }
+  // สั่งให้แอปรีเฟรชยอดเงินบนหน้าจออัตโนมัติทุกๆ 15 วินาที (15000 มิลลิวินาที)
+setInterval(function() {
+  // ตรวจสอบก่อนว่าล็อกอินสำเร็จและมีข้อมูลนักเรียนอยู่บนจอหรือไม่ เพื่อไม่ให้ยิง API ขัดจังหวะหน้าอื่น
+  if (currentStudentId && currentStudent) {
+    refreshBalances();
+  }
+}, 15000);
 </script>
 </body>
 </html>
