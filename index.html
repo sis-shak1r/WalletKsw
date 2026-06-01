@@ -391,66 +391,111 @@
   }
 
   // 🎯 ฟังก์ชันคัดแยกและวิเคราะห์ข้อมูล QR Code (Smart Router อัจฉริยะ)
-  function handleQRSuccess(data) {
-    stopRealtimeScanner(); 
-    closeFullModal('modal-qr'); 
+async function handleQRSuccess(data) {
+  stopRealtimeScanner(); 
+  closeFullModal('modal-qr'); 
+  
+  let cleanData = data.replace(/"/g, '').trim();
+  
+  // ตรวจจับกรณีร้านค้า: format "shopId,amount"
+  if (cleanData.includes(",")) {
+    const parts = cleanData.split(",");
+    const shopId = parts[0].trim();
+    const amount = parseFloat(parts[1].trim()) || 0;
     
-    // ลบเครื่องหมายอัญประกาศคู่ (") เปลือกนอกทั้งหมดออก เพื่อให้ได้ข้อความดิบแท้จริง
-    let cleanData = data.replace(/"/g, '').trim();
-    
-    // ตรวจจับกรณีเงื่อนไขร้านค้า: มีเครื่องหมายจุลภาคคั่นระบุราคามาด้วย เช่น shop01,20
-    if (cleanData.includes(",")) {
-      const parts = cleanData.split(",");
-      const shopId = parts[0].trim();
-      const amount = parseFloat(parts[1].trim()) || 0;
+    if(shopId && amount > 0) {
+      currentTransactionMode = "pay_shop";
+      autoFilledAmount = amount;
       
-      if(shopId && amount > 0) {
-        currentTransactionMode = "pay_shop";
-        autoFilledAmount = amount;
-        
-        // ปรับแต่ง UI รอรับหน้าต่างสแกนจ่ายของร้านค้าสวัสดิการ
-        document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-store me-2 text-success"></i>ชำระค่าสินค้า/บริการ';
-        document.getElementById('destination-account-section').classList.add('d-none'); // ซ่อนช่องกรอกเลขบัญชี
-        document.getElementById('info-box-label').innerText = "ร้านค้าผู้รับเงิน";
-        document.getElementById('info-box-sublabel').innerText = "รหัสร้านค้า:";
-        document.getElementById('info-box-icon-container').innerHTML = '<i class="fa-solid fa-store text-success"></i>';
-        
-        openFullModal('modal-transfer');
-        searchShopDirectly(shopId, amount);
-        return;
+      // ปรับแต่ง UI
+      document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-store me-2 text-success"></i>ชำระค่าสินค้า/บริการ';
+      document.getElementById('destination-account-section').classList.add('d-none');
+      document.getElementById('info-box-label').innerText = "ร้านค้าผู้รับเงิน";
+      document.getElementById('info-box-sublabel').innerText = "รหัสร้านค้า:";
+      document.getElementById('info-box-icon-container').innerHTML = '<i class="fa-solid fa-store text-success"></i>';
+      
+      openFullModal('modal-transfer');
+      await searchShopDirectly(shopId, amount);
+      return;
+    }
+  }
+  
+  // กรณีปกติ: โอนให้เพื่อน
+  currentTransactionMode = "transfer"; // เพิ่มการกำหนด mode
+  openTransferMode();
+  document.getElementById('friend-id-input').value = cleanData; 
+  searchFriend('friend-id-input');
+}
+
+// ค้นหาร้านค้า
+async function searchShopDirectly(shopId, amount) {
+  Swal.fire({ title: 'กำลังตรวจสอบข้อมูลร้านค้า...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  const res = await callBackendAPI({ action: 'verifyShopLogin', shopId: shopId });
+  Swal.close();
+  
+  if (res && res.allowed) {
+    targetShop = res.shopInfo; // เก็บข้อมูลร้านค้า
+    document.getElementById('target-name').innerText = res.shopInfo.name;
+    document.getElementById('target-id').innerText = res.shopInfo.id;
+    document.getElementById('friend-info-box').classList.remove('d-none');
+    
+    const amountInput = document.getElementById('transfer-amount');
+    amountInput.value = amount.toFixed(2);
+    amountInput.setAttribute('disabled', true); 
+    document.getElementById('btn-submit-transfer').removeAttribute('disabled');
+  } else {
+    Swal.fire('ปฏิเสธการทำรายการ', res.message || 'ไม่พบข้อมูลร้านค้านี้', 'error');
+    closeFullModal('modal-transfer');
+    resetTransferFields();
+  }
+}
+
+// ยืนยันการชำระเงินให้ร้านค้า
+async function confirmPayToShop() {
+  if (!targetShop) return Swal.fire('ผิดพลาด', 'ไม่พบข้อมูลร้านค้า กรุณาสแกนใหม่อีกครั้ง', 'error');
+  
+  const amount = autoFilledAmount;
+  
+  Swal.fire({
+    title: 'ยืนยันการชำระเงิน',
+    text: `ชำระเงิน ฿${amount.toFixed(2)} ให้กับ "${targetShop.name}"?`,
+    icon: 'question', 
+    showCancelButton: true, 
+    confirmButtonText: 'ยืนยันชำระเงิน', 
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#10B981'
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      
+      const res = await callBackendAPI({ 
+        action: 'processPayment', 
+        studentId: currentStudent.id, 
+        totalAmount: amount,
+        walletType: 'digital_quota', 
+        shopId: targetShop.id,
+        shopName: targetShop.name,
+        cartItems: [{ name: "ชำระผ่าน QR", qty: 1, price: amount }]
+      });
+      
+      Swal.close();
+      if(res && res.status === 'success') {
+        closeFullModal('modal-transfer'); 
+        resetTransferFields(); 
+        refreshBalances();
+        showDetailSlip({ 
+          id: res.txId || ("TX_" + new Date().getTime()), 
+          type: 'เงินออก', 
+          detail: 'ชำระเงินร้าน ' + targetShop.name, 
+          amount: amount, 
+          date: new Date().toLocaleString('th-TH')
+        });
+      } else { 
+        Swal.fire('การชำระเงินล้มเหลว', res.message || 'เกิดข้อผิดพลาด', 'error'); 
       }
     }
-    
-    // กรณีตัวเลขดิบปกติ: ตีเป็นหมายเลขบัญชีนักเรียนสำหรับระบบโอนให้เพื่อน
-    openTransferMode();
-    document.getElementById('friend-id-input').value = cleanData; 
-    searchFriend('friend-id-input');
-  }
-
-  // เรียกสืบค้นหาข้อมูลโปรไฟล์บัญชีของร้านค้าผู้รับเงิน
-  async function searchShopDirectly(shopId, amount) {
-    Swal.fire({ title: 'กำลังตรวจสอบข้อมูลร้านค้า...', didOpen: () => Swal.showLoading() });
-    const res = await callBackendAPI({ action: 'verifyShopLogin', shopId: shopId });
-    Swal.close();
-    
-    if (res && res.allowed) {
-      targetShop = res.shopInfo;
-      document.getElementById('target-name').innerText = res.shopInfo.name;
-      document.getElementById('target-id').innerText = res.shopInfo.id;
-      document.getElementById('friend-info-box').classList.remove('d-none');
-      
-      // 🔒 ดำเนินการกรอกราคาสินค้าออโต้พร้อมสั่งล็อกอินพุต (disabled) ห้ามเด็กทำการแก้ยอดเงินเอง
-      const amountInput = document.getElementById('transfer-amount');
-      amountInput.value = amount.toFixed(2);
-      amountInput.setAttribute('disabled', true); 
-      
-      document.getElementById('btn-submit-transfer').removeAttribute('disabled');
-    } else {
-      Swal.fire('ปฏิเสธการทำรายการ', res.message || 'ไม่พบข้อมูลบัญชีร้านค้านี้ในระบบสถาบัน', 'error');
-      closeFullModal('modal-transfer');
-      resetTransferFields();
-    }
-  }
+  });
+}
 
   // เรียกสืบค้นหาข้อมูลสิทธิ์บัญชีเพื่อนผู้รับโอนเงิน
   async function searchFriend(inputId) {
@@ -482,23 +527,23 @@
   }
 
   function resetTransferFields() {
-    targetStudent = null; 
-    targetShop = null;
-    autoFilledAmount = 0;
-    document.getElementById('friend-info-box').classList.add('d-none');
-    document.getElementById('transfer-amount').setAttribute('disabled', true);
-    document.getElementById('btn-submit-transfer').setAttribute('disabled', true);
-    document.getElementById('transfer-amount').value = ''; 
-    document.getElementById('friend-id-input').value = '';
-  }
+  targetStudent = null; 
+  targetShop = null;
+  autoFilledAmount = 0;
+  document.getElementById('friend-info-box').classList.add('d-none');
+  document.getElementById('transfer-amount').removeAttribute('disabled'); // ปลดล็อกเพื่อความปลอดภัย
+  document.getElementById('btn-submit-transfer').setAttribute('disabled', true);
+  document.getElementById('transfer-amount').value = ''; 
+  document.getElementById('friend-id-input').value = '';
+}
 
   function executeSubmitAction() {
-    if (currentTransactionMode === "pay_shop") {
-      confirmPayToShop();
-    } else {
-      confirmTransfer();
-    }
+  if (currentTransactionMode === "pay_shop") {
+    confirmPayToShop();
+  } else {
+    confirmTransfer();
   }
+}
 
   // 1. ตรรกะประมวลผลคำขอธุรกรรมโอนเงินหาเพื่อนนักเรียน
   function confirmTransfer() {
