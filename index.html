@@ -268,7 +268,6 @@
   let targetShop = null; 
   let currentTransactionMode = "transfer"; // "transfer" (โอนเพื่อน) หรือ "pay_shop" (จ่ายร้านค้า)
   let autoFilledAmount = 0; 
-  let currentCartItems = [];
 
   let qrScannerInstance = null; 
   let currentHistoryData = [];
@@ -392,93 +391,23 @@
   }
 
   // 🎯 ฟังก์ชันคัดแยกและวิเคราะห์ข้อมูล QR Code (Smart Router อัจฉริยะ)
-  // 🎯 ฟังก์ชันช่วยจัดรูปแบบข้อมูล QR Code
-  function parseQRData(rawStr) {
-    let str = rawStr.trim();
+async function handleQRSuccess(data) {
+  stopRealtimeScanner(); 
+  closeFullModal('modal-qr'); 
+  
+  let cleanData = data.replace(/"/g, '').trim();
+  
+  // ตรวจจับกรณีร้านค้า: format "shopId,amount"
+  if (cleanData.includes(",")) {
+    const parts = cleanData.split(",");
+    const shopId = parts[0].trim();
+    const amount = parseFloat(parts[1].trim()) || 0;
     
-    // ตรวจสอบว่าเป็นสิทธิ์ P2P หรือ ชำระเงินให้ร้านค้า
-    if (!str.includes(',')) {
-      return { isShop: false, studentId: str.replace(/"/g, '') };
-    }
-    
-    let shopId = '';
-    let amountStr = '';
-    let remaining = '';
-    
-    let index = 0;
-    if (str.startsWith('"')) {
-      let closeQuote = str.indexOf('"', 1);
-      if (closeQuote !== -1) {
-        shopId = str.substring(1, closeQuote);
-        index = str.indexOf(',', closeQuote);
-        index = (index === -1) ? closeQuote + 1 : index + 1;
-      }
-    } else {
-      let firstComma = str.indexOf(',');
-      shopId = str.substring(0, firstComma);
-      index = firstComma + 1;
-    }
-    
-    let sub = str.substring(index).trim();
-    if (sub.startsWith('"')) {
-      let closeQuote = sub.indexOf('"', 1);
-      if (closeQuote !== -1) {
-        amountStr = sub.substring(1, closeQuote);
-        let commaIdx = sub.indexOf(',', closeQuote);
-        index = index + ((commaIdx === -1) ? closeQuote + 1 : commaIdx + 1);
-      }
-    } else {
-      let nextComma = sub.indexOf(',');
-      if (nextComma !== -1) {
-        amountStr = sub.substring(0, nextComma);
-        index = index + nextComma + 1;
-      } else {
-        amountStr = sub;
-        index = str.length;
-      }
-    }
-    
-    remaining = str.substring(index).trim();
-    if (remaining.startsWith('"') && remaining.endsWith('"')) {
-      remaining = remaining.substring(1, remaining.length - 1);
-    }
-    remaining = remaining.replace(/\\"/g, '"');
-    
-    const amount = parseFloat(amountStr.replace(/"/g, '')) || 0;
-    shopId = shopId.replace(/"/g, '').trim();
-    
-    let cartItems = [];
-    if (remaining) {
-      try {
-        const parsed = JSON.parse(remaining);
-        if (Array.isArray(parsed)) {
-          cartItems = parsed;
-        } else {
-          cartItems = [{ name: remaining, qty: 1, price: amount }];
-        }
-      } catch (e) {
-        cartItems = [{ name: remaining, qty: 1, price: amount }];
-      }
-    } else {
-      cartItems = [{ name: "ชำระเงินผ่าน QR", qty: 1, price: amount }];
-    }
-    
-    return { isShop: true, shopId, amount, cartItems };
-  }
-
-  // 🎯 ฟังก์ชันคัดแยกและวิเคราะห์ข้อมูล QR Code (Smart Router อัจฉริยะ)
-  async function handleQRSuccess(data) {
-    stopRealtimeScanner(); 
-    closeFullModal('modal-qr'); 
-    
-    const qrResult = parseQRData(data);
-    
-    if (qrResult.isShop) {
+    if(shopId && amount > 0) {
       currentTransactionMode = "pay_shop";
-      autoFilledAmount = qrResult.amount;
-      currentCartItems = qrResult.cartItems;
+      autoFilledAmount = amount;
       
-      // ปรับแต่ง UI สำหรับชำระร้านค้า
+      // ปรับแต่ง UI
       document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-store me-2 text-success"></i>ชำระค่าสินค้า/บริการ';
       document.getElementById('destination-account-section').classList.add('d-none');
       document.getElementById('info-box-label').innerText = "ร้านค้าผู้รับเงิน";
@@ -486,56 +415,8 @@
       document.getElementById('info-box-icon-container').innerHTML = '<i class="fa-solid fa-store text-success"></i>';
       
       openFullModal('modal-transfer');
-      await searchShopDirectly(qrResult.shopId, qrResult.amount);
-    } else {
-      // กรณีปกติ: โอนให้เพื่อน
-      currentTransactionMode = "transfer";
-      openTransferMode();
-      document.getElementById('friend-id-input').value = qrResult.studentId; 
-      searchFriend('friend-id-input');
-    }
-  }
-
-  // ค้นหาร้านค้า
-  async function searchShopDirectly(shopId, amount) {
-    Swal.fire({ 
-      title: 'กำลังตรวจสอบข้อมูลร้านค้า...', 
-      allowOutsideClick: false, 
-      didOpen: () => Swal.showLoading() 
-    });
-
-    try {
-      const res = await callBackendAPI({ action: 'verifyShopLogin', shopId: shopId });
-      Swal.close();
-      
-      if (res && res.allowed) {
-        targetShop = res.shopInfo;
-        
-        document.getElementById('target-name').innerText = res.shopInfo.name;
-        document.getElementById('target-id').innerText = res.shopInfo.id;
-        document.getElementById('friend-info-box').classList.remove('d-none');
-        
-        const amountInput = document.getElementById('transfer-amount');
-        amountInput.value = amount.toFixed(2);
-        amountInput.setAttribute('disabled', true);
-        
-        document.getElementById('btn-submit-transfer').removeAttribute('disabled');
-        
-        Swal.fire({
-          icon: 'success',
-          title: 'พบร้านค้า!',
-          text: 'ร้าน ' + res.shopInfo.name + ' พร้อมรับชำระเงิน',
-          timer: 1500,
-          showConfirmButton: false
-        });
-      } else {
-        Swal.fire('ปฏิเสธการทำรายการ', res.message || 'ไม่พบรหัสร้านค้านี้ในระบบ', 'error');
-        closeFullModal('modal-transfer');
-        resetTransferFields();
-      }
-    } catch (err) {
-      Swal.close();
-      Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้: ' + err.message, 'error');
+      await searchShopDirectly(shopId, amount);
+      return;
     }
   }
   
@@ -602,53 +483,6 @@ async function searchShopDirectly(shopId, amount) {
     }
 }
 
-// ยืนยันการชำระเงินให้ร้านค้า
-async function confirmPayToShop() {
-  if (!targetShop) return Swal.fire('ผิดพลาด', 'ไม่พบข้อมูลร้านค้า กรุณาสแกนใหม่อีกครั้ง', 'error');
-  
-  const amount = autoFilledAmount;
-  
-  Swal.fire({
-    title: 'ยืนยันการชำระเงิน',
-    text: `ชำระเงิน ฿${amount.toFixed(2)} ให้กับ "${targetShop.name}"?`,
-    icon: 'question', 
-    showCancelButton: true, 
-    confirmButtonText: 'ยืนยันชำระเงิน', 
-    cancelButtonText: 'ยกเลิก',
-    confirmButtonColor: '#10B981'
-  }).then(async (result) => {
-    if (result.isConfirmed) {
-      Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-      
-      const res = await callBackendAPI({ 
-        action: 'processPayment', 
-        studentId: currentStudent.id, 
-        totalAmount: amount,
-        walletType: 'digital_quota', 
-        shopId: targetShop.id,
-        shopName: targetShop.name,
-        cartItems: [{ name: "ชำระผ่าน QR", qty: 1, price: amount }]
-      });
-      
-      Swal.close();
-      if(res && res.status === 'success') {
-        closeFullModal('modal-transfer'); 
-        resetTransferFields(); 
-        refreshBalances();
-        showDetailSlip({ 
-          id: res.txId || ("TX_" + new Date().getTime()), 
-          type: 'เงินออก', 
-          detail: 'ชำระเงินร้าน ' + targetShop.name, 
-          amount: amount, 
-          date: new Date().toLocaleString('th-TH')
-        });
-      } else { 
-        Swal.fire('การชำระเงินล้มเหลว', res.message || 'เกิดข้อผิดพลาด', 'error'); 
-      }
-    }
-  });
-}
-
   // เรียกสืบค้นหาข้อมูลสิทธิ์บัญชีเพื่อนผู้รับโอนเงิน
   async function searchFriend(inputId) {
     const friendId = document.getElementById(inputId).value.trim();
@@ -678,17 +512,16 @@ async function confirmPayToShop() {
     }
   }
 
-    function resetTransferFields() {
-    targetStudent = null; 
-    targetShop = null;
-    autoFilledAmount = 0;
-    currentCartItems = []; // <-- เพิ่มตรงนี้
-    document.getElementById('friend-info-box').classList.add('d-none');
-    document.getElementById('transfer-amount').removeAttribute('disabled');
-    document.getElementById('btn-submit-transfer').setAttribute('disabled', true);
-    document.getElementById('transfer-amount').value = ''; 
-    document.getElementById('friend-id-input').value = '';
-  }
+  function resetTransferFields() {
+  targetStudent = null; 
+  targetShop = null;
+  autoFilledAmount = 0;
+  document.getElementById('friend-info-box').classList.add('d-none');
+  document.getElementById('transfer-amount').removeAttribute('disabled'); // ปลดล็อกเพื่อความปลอดภัย
+  document.getElementById('btn-submit-transfer').setAttribute('disabled', true);
+  document.getElementById('transfer-amount').value = ''; 
+  document.getElementById('friend-id-input').value = '';
+}
 
   function executeSubmitAction() {
   if (currentTransactionMode === "pay_shop") {
@@ -729,7 +562,6 @@ async function confirmPayToShop() {
   }
 
   // 2. ตรรกะประมวลผลการตัดจ่ายเงินตามยอดบิลให้บัญชีร้านค้า
-    // 2. ตรรกะประมวลผลการตัดจ่ายเงินตามยอดบิลให้บัญชีร้านค้า
   function confirmPayToShop() {
     const amount = autoFilledAmount;
     const totalAvailableFund = currentStudent.wallet + currentStudent.digital;
@@ -757,7 +589,7 @@ async function confirmPayToShop() {
           walletType: 'digital_quota', 
           shopId: targetShop.id,
           shopName: targetShop.name,
-          cartItems: (currentCartItems && currentCartItems.length > 0) ? currentCartItems : [{ name: "ชำระเงินผ่าน QR หน้าแอปกระเป๋าตังค์", qty: 1, price: amount }]
+          cartItems: [{ name: "ชำระเงินผ่าน QR หน้าแอปกระเป๋าตังค์", qty: 1, price: amount }]
         });
         
         Swal.close();
@@ -767,12 +599,12 @@ async function confirmPayToShop() {
           refreshBalances();
           
           showDetailSlip({ 
-            id: res.txId || ("TX_POS_W_" + new Date().getTime()), 
+            id: res.txId || ("TX_SHOP_" + new Date().getTime()), 
             type: 'เงินออก', 
-            detail: 'ซื้อสินค้าจากร้าน: ' + (res.shopName || targetShop.name), 
+            detail: 'ชำระค่าสินค้าให้ร้าน ' + (res.shopName || targetShop.name), 
             amount: amount, 
             date: new Date().toLocaleString('th-TH'), 
-            items: res.items || currentCartItems
+            items: res.items || null 
           });
         } else { 
           Swal.fire('การชำระเงินล้มเหลว', res.message, 'error'); 
@@ -818,14 +650,9 @@ async function confirmPayToShop() {
 
   function viewDetailByIndex(index) { const tx = currentHistoryData[index]; if(tx) showDetailSlip(tx); }
 
-    function showDetailSlip(tx) {
+  function showDetailSlip(tx) {
     document.getElementById('dtl-txid').innerText = tx.id;
-    
-    // ลบรหัสร้านค้าในวงเล็บออกหากมี (เช่น (Shop01) หรือ (Sp01)) จากรายละเอียดข้อความสลิป
-    let detailText = tx.detail || "";
-    detailText = detailText.replace(/\s*\([\w]+\)/g, '');
-    document.getElementById('dtl-detail').innerText = detailText;
-    
+    document.getElementById('dtl-detail').innerText = tx.detail;
     document.getElementById('dtl-date').innerText = tx.date;
     document.getElementById('dtl-amount').innerText = tx.amount.toFixed(2);
     const iconArea = document.getElementById('slip-icon-area');
@@ -838,27 +665,23 @@ async function confirmPayToShop() {
       iconArea.innerHTML = '<i class="fa-solid fa-circle-arrow-up fa-3x text-danger"></i>';
       badgeType.innerHTML = '<span class="badge bg-danger-subtle text-danger px-3">เงินออก</span>';
     }
-    
-    // แสดงรายการสินค้าแยกย่อยลงใน สลิป Modal
-    const productsSection = document.getElementById('dtl-products-section');
-    const productsList = document.getElementById('dtl-products-list');
-    
+
+    // แสดงรายการสินค้า (จากคอลัมน์ G ใน Code.gs) ถ้ารายการนี้มีข้อมูลสินค้าแนบมาด้วย
+    const productSection = document.getElementById('dtl-products-section');
+    const productList = document.getElementById('dtl-products-list');
     if (tx.items && Array.isArray(tx.items) && tx.items.length > 0) {
-      productsSection.classList.remove('d-none');
-      productsList.innerHTML = '';
-      tx.items.forEach(item => {
-        const itemHtml = `
-          <div class="d-flex justify-content-between mb-1" style="font-size: 12px; color: #475569;">
-            <span>${item.name} x${item.qty}</span>
-            <span class="fw-bold">฿${(item.price * item.qty).toFixed(2)}</span>
-          </div>`;
-        productsList.insertAdjacentHTML('beforeend', itemHtml);
-      });
+      productList.innerHTML = tx.items.map(it => `
+        <div class="d-flex justify-content-between">
+          <span>${it.name} x${it.qty}</span>
+          <span>฿${(parseFloat(it.price) || 0).toFixed(2)}</span>
+        </div>
+      `).join('');
+      productSection.classList.remove('d-none');
     } else {
-      productsSection.classList.add('d-none');
-      productsList.innerHTML = '';
+      productList.innerHTML = '';
+      productSection.classList.add('d-none');
     }
-    
+
     new bootstrap.Modal(document.getElementById('detailSlipModal')).show();
   }
 
