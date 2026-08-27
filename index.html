@@ -18,7 +18,7 @@
     .digital-badge { background: rgba(255, 255, 255, 0.18); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.15); }
     
     /* เมนูด้านล่างแบบ Sticky Floating รองรับอุปกรณ์หน้าจอมีบาก (Safe Area) */
-    .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 75px; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; align-items: center; z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.06); padding-bottom: env(safe-area-inset-bottom); }
+    .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 75px; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-around: space-around; align-items: center; z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.06); padding-bottom: env(safe-area-inset-bottom); }
     .nav-item-btn { text-align: center; color: #64748b; font-size: 11px; cursor: pointer; border: none; background: none; transition: color 0.2s; text-decoration: none; padding: 5px 0; width: 25%; }
     .nav-item-btn i { font-size: 20px; display: block; margin-bottom: 4px; transition: transform 0.2s; }
     .nav-item-btn.active, .nav-item-btn:hover { color: #007aff; }
@@ -31,31 +31,26 @@
     .modal-header-custom { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
     .btn-close-custom { background: #f1f5f9; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; }
     
-    /* 📱 สไตล์หน้าต่างสแกนคิวอาร์โค้ดแบบเต็มจอระดับพรีเมียม (สไตล์แอปธนาคาร) */
+    /* สไตล์หน้าต่างสแกนคิวอาร์โค้ด */
     .qr-modal-bg { background: #000000 !important; padding: 0 !important; overflow: hidden !important; }
     .qr-header-overlay { position: absolute; top: 0; left: 0; width: 100%; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%); }
     .qr-header-title { color: #ffffff; font-weight: 600; margin: 0; font-size: 18px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
     
-    /* ปุ่มเลือกรูปจากคลังภาพสไตล์แอปธนาคาร */
     .btn-gallery-trigger { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.3); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffffff; backdrop-filter: blur(8px); transition: background 0.2s; }
     .btn-gallery-trigger:hover { background: rgba(255, 255, 255, 0.3); }
     
-    /* ตัวครอบและวิดีโอกล้องขยายเต็มกรอบหน้าจอพอดี */
     .video-fullscreen-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5; }
     #preview-video { width: 100%; height: 100%; object-fit: cover; }
     
-    /* ช่องเล็งเป้า (Scanning Target Frame) กลางหน้าจอ */
     .qr-scanner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
     .scan-box-finder { width: 260px; height: 260px; border: 2px solid rgba(255, 255, 255, 0.4); position: relative; box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.6); border-radius: 16px; }
     
-    /* มุมเรืองแสงรอบกล่องเล็ง */
     .scan-corner { position: absolute; width: 24px; height: 24px; border: 4px solid #00cbd5; pointer-events: none; }
     .top-left { top: -2px; left: -2px; border-right: 0; border-bottom: 0; border-top-left-radius: 12px; }
     .top-right { top: -2px; right: -2px; border-left: 0; border-bottom: 0; border-top-right-radius: 12px; }
     .bottom-left { bottom: -2px; left: -2px; border-right: 0; border-top: 0; border-bottom-left-radius: 12px; }
     .bottom-right { bottom: -2px; right: -2px; border-left: 0; border-top: 0; border-bottom-right-radius: 12px; }
     
-    /* เส้นเลเซอร์วิ่งขึ้นลงสแกน */
     .scan-laser { position: absolute; top: 0; left: 5%; width: 90%; height: 3px; background: linear-gradient(to right, transparent, #00cbd5, transparent); box-shadow: 0 0 10px #00cbd5; animation: laserAnim 2.5s infinite ease-in-out; }
     @keyframes laserAnim { 0% { top: 5%; } 50% { top: 95%; } 100% { top: 5%; } }
 
@@ -77,7 +72,7 @@
   <div id="denied-screen" class="p-4 text-center my-auto d-none">
     <div class="text-danger mb-4"><i class="fa-solid fa-circle-lock fa-5x"></i></div>
     <h4 class="fw-bold text-danger">ไม่อนุญาตให้เข้าถึงระบบ</h4>
-    <p class="text-muted small">กรุณาเข้าใช้งานผ่านผ่านบัญชีที่ถูกต้อง</p>
+    <p class="text-muted small">กรุณาเข้าใช้งานผ่านบัญชีที่ถูกต้อง</p>
   </div>
 
   <div id="main-dashboard" class="p-4 d-none">
@@ -159,6 +154,12 @@
       <small class="text-muted"><span id="info-box-sublabel">เลขบัญชี:</span> <span id="target-id">-</span></small>
     </div>
   </div>
+
+  <!-- โครงสร้างแสดงรายการสินค้าในบิล (แสดงเฉพาะตอนจ่ายร้านค้า) -->
+  <div id="bill-items-container" class="card bg-light border-0 p-3 mb-3 d-none rounded-3">
+    <h6 class="fw-bold text-secondary mb-2" style="font-size:13px;"><i class="fa-solid fa-basket-shopping me-1"></i> รายการสินค้าที่สั่งซื้อ</h6>
+    <div id="bill-items-list" style="font-size:13px; color:#4a5568;"></div>
+  </div>
   
   <div class="mb-4">
     <label class="form-label small fw-bold">จำนวนเงิน (บาท)</label>
@@ -194,7 +195,7 @@
       <div class="scan-corner bottom-right"></div>
       <div class="scan-laser"></div>
     </div>
-    <div class="scan-hint-text">วางคิวอาร์โค้ดร้านค้า หรือเพื่อนในกรอบ หรือเลือกจากคลังภาพ</div>
+    <div class="scan-hint-text">วางคิวอาร์โค้ดบิลร้านค้า หรือเพื่อนในกรอบ หรือเลือกจากคลังภาพ</div>
   </div>
 </div>
 
@@ -256,7 +257,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-  // 🔗 แหล่งเชื่อมต่อข้อมูลกลางระบบกระเป๋าเงินโรงเรียน (Mutec Plus+ API Core)
   const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw96OeypnEruBxcg91RdIe8PennOP2VY_FOeFUvdPlrychZpu3e2s8fIaVxGuYpRupTPQ/exec";
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -264,16 +264,14 @@
 
   let currentStudent = null;
   let targetStudent = null;
-  let targetShop = null; 
-  let currentTransactionMode = "transfer"; // "transfer" (โอนเพื่อน) หรือ "pay_shop" (จ่ายร้านค้า)
-  let autoFilledAmount = 0; 
+  let currentBillData = null; // เก็บข้อมูลบิลร้านค้าที่ดึงมาจากชีท "รอชำระ"
+  let currentTransactionMode = "transfer"; // "transfer" หรือ "pay_shop"
 
   let qrScannerInstance = null; 
   let currentHistoryData = [];
 
   document.getElementById('filter-month').value = new Date().getMonth() + 1;
 
-  // 🌐 ฟังก์ชันหลักในการยิง POST Request หา Google Apps Script
   async function callBackendAPI(payload) {
     const response = await fetch(GAS_API_URL, {
       method: "POST",
@@ -283,7 +281,6 @@
     return await response.json();
   }
 
-  // 🚀 โหลดโปรไฟล์สแกนสิทธิ์เข้าใช้งานระบบตั้งแต่เปิดเว็บหน้าแรก
   window.addEventListener('load', async function() {
     if(!currentStudentId) { showDenied(); return; }
     try {
@@ -314,7 +311,6 @@
     document.getElementById('txt-digital-limit').innerText = profile.dailyDigitalLimit.toFixed(2);
   }
 
-  // 🔄 รีเฟรชข้อมูลยอดคงเหลือเบื้องหลังแบบ Silent-Refresh ทุกช่วงเวลาลูป
   async function refreshBalances() {
     try {
       if (!currentStudentId) return;
@@ -329,21 +325,19 @@
   function openFullModal(modalId) { document.getElementById(modalId).classList.add('active'); }
   function closeFullModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
 
-  // เปิดหน้าต่างทำรายการแบบระบุเลขปลายทางเอง (กดปุ่มโอนเงินปกติ)
   function openTransferMode() {
     currentTransactionMode = "transfer";
     
-    // ตั้งค่าส่วนหัวข้อและไอคอนสัญลักษณ์ผู้ใช้งานบุคคล
     document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-paper-plane me-2 text-primary"></i>โอนเงินให้เพื่อน';
     document.getElementById('destination-account-section').classList.remove('d-none');
     document.getElementById('info-box-label').innerText = "ชื่อบัญชีผู้รับเงิน";
     document.getElementById('info-box-sublabel').innerText = "เลขบัญชี:";
     document.getElementById('info-box-icon-container').innerHTML = '<i class="fa-solid fa-user-graduate text-primary"></i>';
+    document.getElementById('bill-items-container').classList.add('d-none');
     
     openFullModal('modal-transfer');
   }
 
-  // --- ⚡ ควบคุมการทำงานกล้องวิดีโอสดเต็มจอเพื่อสแกน QR Code ---
   function autoStartCameraDirectly() {
     const videoElem = document.getElementById('preview-video');
     
@@ -369,7 +363,6 @@
     document.getElementById('gallery-file-input').value = "";
   }
 
-  // --- 🖼️ ถอดรหัสคิวอาร์จากไฟล์รูปภาพในคลังภาพสมาร์ตโฟน ---
   function scanQRFromGallery(inputElement) {
     if (inputElement.files && inputElement.files[0]) {
       const file = inputElement.files[0];
@@ -389,80 +382,101 @@
     }
   }
 
-  // 🎯 ฟังก์ชันคัดแยกและวิเคราะห์ข้อมูล QR Code (Smart Router อัจฉริยะ)
+  // 🎯 ฟังก์ชันจัดการสแกน QR Code (Smart Router 2 กรณี)
   async function handleQRSuccess(data) {
     stopRealtimeScanner(); 
     closeFullModal('modal-qr'); 
     
     let cleanData = data.replace(/"/g, '').trim();
     
-    // ตรวจจับกรณีร้านค้า: format "shopId,amount"
-    if (cleanData.includes(",")) {
-      const parts = cleanData.split(",");
-      const shopId = parts[0].trim();
-      const amount = parseFloat(parts[1].trim()) || 0;
+    // -------------------------------------------------------------
+    // กรณีที่ 2: จ่ายร้านค้า - ข้อความขึ้นต้นด้วย "BILL" ตามด้วยรหัสอ้างอิงบิล
+    // -------------------------------------------------------------
+    if (cleanData.toUpperCase().startsWith("BILL")) {
+      currentTransactionMode = "pay_shop";
       
-      if(shopId && amount > 0) {
-        currentTransactionMode = "pay_shop";
-        autoFilledAmount = amount;
-        
-        // ปรับแต่ง UI
-        document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-store me-2 text-success"></i>ชำระค่าสินค้า/บริการ';
-        document.getElementById('destination-account-section').classList.add('d-none');
-        document.getElementById('info-box-label').innerText = "ร้านค้าผู้รับเงิน";
-        document.getElementById('info-box-sublabel').innerText = "รหัสร้านค้า:";
-        document.getElementById('info-box-icon-container').innerHTML = '<i class="fa-solid fa-store text-success"></i>';
-        
-        openFullModal('modal-transfer');
-        await searchShopDirectly(shopId, amount);
-        return;
-      }
+      // ปรับแต่ง UI รอแสดงผล
+      document.getElementById('transfer-modal-title').innerHTML = '<i class="fa-solid fa-store me-2 text-success"></i>ชำระค่าสินค้า/บริการ';
+      document.getElementById('destination-account-section').classList.add('d-none');
+      document.getElementById('info-box-label').innerText = "ร้านค้าผู้รับเงิน";
+      document.getElementById('info-box-sublabel').innerText = "รหัสบิลอ้างอิง:";
+      document.getElementById('info-box-icon-container').innerHTML = '<i class="fa-solid fa-store text-success"></i>';
+      
+      openFullModal('modal-transfer');
+      
+      // ดึงรายละเอียดบิลจากชีท "รอชำระ"
+      await searchBillDirectly(cleanData);
+      return;
     }
     
-    // กรณีปกติ: โอนให้เพื่อน
-    currentTransactionMode = "transfer";
-    openTransferMode();
-    document.getElementById('friend-id-input').value = cleanData; 
-    searchFriend('friend-id-input');
+    // -------------------------------------------------------------
+    // กรณีที่ 1: โอนให้เพื่อน - ตัวเลขอย่างเดียว
+    // -------------------------------------------------------------
+    if (/^\d+$/.test(cleanData)) {
+      currentTransactionMode = "transfer";
+      openTransferMode();
+      document.getElementById('friend-id-input').value = cleanData; 
+      searchFriend('friend-id-input');
+      return;
+    }
+
+    Swal.fire('รูปแบบ QR Code ไม่ถูกต้อง', 'ไม่พบข้อมูลเลขบัญชีเพื่อน หรือรหัสบิลร้านค้าที่ถูกต้อง', 'error');
   }
 
-  // ค้นหาร้านค้า
-  // เรียกสืบค้นหาข้อมูลโปรไฟล์บัญชีของร้านค้าผู้รับเงิน
-  async function searchShopDirectly(shopId, amount) {
+  // 🔍 ตรวจสอบและค้นหาบิลในชีท "รอชำระ"
+  async function searchBillDirectly(billId) {
     Swal.fire({ 
-      title: 'กำลังตรวจสอบข้อมูลร้านค้า...', 
+      title: 'กำลังดึงข้อมูลบิลชำระเงิน...', 
       allowOutsideClick: false, 
       didOpen: () => Swal.showLoading() 
     });
 
     try {
-      const res = await callBackendAPI({ action: 'verifyShopLogin', shopId: shopId });
+      // ยิงสืบค้นข้อมูลบิลไปยัง Google Apps Script
+      const res = await callBackendAPI({ action: 'verifyBill', billId: billId });
       Swal.close();
       
       if (res && res.allowed) {
-        targetShop = res.shopInfo;
+        currentBillData = res.billInfo; // เก็บข้อมูลบิลทั้งหมด ({ billId, shopId, shopName, totalAmount, cartItems })
         
-        document.getElementById('target-name').innerText = res.shopInfo.name;
-        document.getElementById('target-id').innerText = res.shopInfo.id;
+        document.getElementById('target-name').innerText = res.billInfo.shopName;
+        document.getElementById('target-id').innerText = res.billInfo.billId;
         
-        const infoBox = document.getElementById('friend-info-box');
-        infoBox.classList.remove('d-none');
+        // แสดงการ์ดข้อมูลร้านค้า
+        document.getElementById('friend-info-box').classList.remove('d-none');
         
+        // แสดงตารางรายการสินค้าที่สั่งซื้อ
+        const billItemsContainer = document.getElementById('bill-items-container');
+        const billItemsList = document.getElementById('bill-items-list');
+        
+        if (res.billInfo.cartItems && res.billInfo.cartItems.length > 0) {
+          billItemsList.innerHTML = res.billInfo.cartItems.map(item => `
+            <div class="d-flex justify-content-between mb-1">
+              <span>${item.name} x${item.qty}</span>
+              <span class="fw-bold">฿${(parseFloat(item.price) * parseInt(item.qty)).toFixed(2)}</span>
+            </div>
+          `).join('');
+          billItemsContainer.classList.remove('d-none');
+        } else {
+          billItemsContainer.classList.add('d-none');
+        }
+
+        // แสดงยอดเงินรวม
         const amountInput = document.getElementById('transfer-amount');
-        amountInput.value = amount.toFixed(2);
+        amountInput.value = parseFloat(res.billInfo.totalAmount).toFixed(2);
         amountInput.setAttribute('disabled', true);
         
         document.getElementById('btn-submit-transfer').removeAttribute('disabled');
         
         Swal.fire({
           icon: 'success',
-          title: 'พบร้านค้า!',
-          text: 'ร้าน ' + res.shopInfo.name + ' พร้อมรับชำระเงิน',
+          title: 'พบข้อมูลบิล!',
+          text: 'ยอดที่ต้องชำระ ฿' + parseFloat(res.billInfo.totalAmount).toFixed(2),
           timer: 1500,
           showConfirmButton: false
         });
       } else {
-        Swal.fire('ปฏิเสธการทำรายการ', res.message || 'ไม่พบรหัสร้านค้านี้ในระบบ', 'error');
+        Swal.fire('ไม่พบรายการบิล', res.message || 'บิลนี้ถูกชำระแล้ว หรือไม่พบรหัสบิลนี้ในระบบ', 'error');
         closeFullModal('modal-transfer');
         resetTransferFields();
       }
@@ -472,7 +486,6 @@
     }
   }
 
-  // เรียกสืบค้นหาข้อมูลสิทธิ์บัญชีเพื่อนผู้รับโอนเงิน
   async function searchFriend(inputId) {
     const friendId = document.getElementById(inputId).value.trim();
     if(!friendId) return Swal.fire('คำเตือน', 'กรุณาระบุเลขบัญชีปลายทาง', 'warning');
@@ -487,6 +500,7 @@
       document.getElementById('target-name').innerText = res.profile.name;
       document.getElementById('target-id').innerText = res.profile.id;
       document.getElementById('friend-info-box').classList.remove('d-none');
+      document.getElementById('bill-items-container').classList.add('d-none');
       
       const amountInput = document.getElementById('transfer-amount');
       amountInput.removeAttribute('disabled');
@@ -502,9 +516,9 @@
 
   function resetTransferFields() {
     targetStudent = null; 
-    targetShop = null;
-    autoFilledAmount = 0;
+    currentBillData = null;
     document.getElementById('friend-info-box').classList.add('d-none');
+    document.getElementById('bill-items-container').classList.add('d-none');
     document.getElementById('transfer-amount').removeAttribute('disabled');
     document.getElementById('btn-submit-transfer').setAttribute('disabled', true);
     document.getElementById('transfer-amount').value = ''; 
@@ -519,7 +533,6 @@
     }
   }
 
-  // 1. ตรรกะประมวลผลคำขอธุรกรรมโอนเงินหาเพื่อนนักเรียน
   function confirmTransfer() {
     const amount = parseFloat(document.getElementById('transfer-amount').value);
     if(!amount || amount <= 0) return Swal.fire('รูปแบบยอดเงินไม่ถูกต้อง', 'กรุณาระบุจำนวนเงินที่เป็นตัวเลขมากกว่า 0', 'error');
@@ -549,9 +562,10 @@
     });
   }
 
-  // 2. ตรรกะประมวลผลการตัดจ่ายเงินตามยอดบิลให้บัญชีร้านค้า
   function confirmPayToShop() {
-    const amount = autoFilledAmount;
+    if (!currentBillData) return Swal.fire('ไม่พบข้อมูลบิล', 'กรุณาสแกนบิลใหม่อีกครั้ง', 'error');
+
+    const amount = parseFloat(currentBillData.totalAmount);
     const totalAvailableFund = currentStudent.wallet + currentStudent.digital;
     
     if(amount > totalAvailableFund) {
@@ -560,7 +574,7 @@
 
     Swal.fire({
       title: 'ยืนยันการชำระเงิน',
-      text: `คุณต้องการชำระเงินจำนวน ฿${amount.toFixed(2)} ให้กับ "${targetShop.name}" หรือไม่? (ระบบจะประมวลผลหักตัดกระเป๋าสิทธิ์สวัสดิการดิจิทัลรายวันให้โดยอัตโนมัติ)`,
+      text: `คุณต้องการชำระเงินจำนวน ฿${amount.toFixed(2)} ให้กับ "${currentBillData.shopName}" หรือไม่?`,
       icon: 'question', 
       showCancelButton: true, 
       confirmButtonText: 'ยืนยันชำระเงิน', 
@@ -568,31 +582,33 @@
       confirmButtonColor: '#10B981'
     }).then(async (result) => {
       if (result.isConfirmed) {
-        Swal.fire({ title: 'กำลังติดต่อเซิร์ฟเวอร์เพื่อหักบัญชี...', didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'กำลังประมวลผลการตัดจ่ายบิล...', didOpen: () => Swal.showLoading() });
         
         const res = await callBackendAPI({ 
           action: 'processPayment', 
           studentId: currentStudent.id, 
+          billId: currentBillData.billId,
           totalAmount: amount,
           walletType: 'digital_quota', 
-          shopId: targetShop.id,
-          shopName: targetShop.name,
-          cartItems: [{ name: "ชำระเงินผ่าน QR หน้าแอปกระเป๋าตังค์", qty: 1, price: amount }]
+          shopId: currentBillData.shopId,
+          shopName: currentBillData.shopName,
+          cartItems: currentBillData.cartItems
         });
         
         Swal.close();
         if(res && res.status === 'success') {
           closeFullModal('modal-transfer'); 
+          const paidBill = { ...currentBillData };
           resetTransferFields(); 
           refreshBalances();
           
           showDetailSlip({ 
-            id: res.txId || ("TX_SHOP_" + new Date().getTime()), 
+            id: res.txId || paidBill.billId, 
             type: 'เงินออก', 
-            detail: 'ชำระค่าสินค้าให้ร้าน ' + (res.shopName || targetShop.name), 
+            detail: 'ชำระค่าสินค้าให้ร้าน ' + (res.shopName || paidBill.shopName), 
             amount: amount, 
             date: new Date().toLocaleString('th-TH'), 
-            items: res.items || null 
+            items: res.items || paidBill.cartItems || null 
           });
         } else { 
           Swal.fire('การชำระเงินล้มเหลว', res.message, 'error'); 
@@ -601,7 +617,6 @@
     });
   }
 
-  // --- ดึงประวัติรายการเดินบัญชีส่วนบุคคล (Statements) ---
   async function loadHistory() {
     const month = document.getElementById('filter-month').value;
     const year = document.getElementById('filter-year').value;
@@ -654,7 +669,6 @@
       badgeType.innerHTML = '<span class="badge bg-danger-subtle text-danger px-3">เงินออก</span>';
     }
 
-    // แสดงรายการสินค้า (จากคอลัมน์ G ใน Code.gs) ถ้ารายการนี้มีข้อมูลสินค้าแนบมาด้วย
     const productSection = document.getElementById('dtl-products-section');
     const productList = document.getElementById('dtl-products-list');
     if (tx.items && Array.isArray(tx.items) && tx.items.length > 0) {
@@ -687,7 +701,6 @@
     document.body.removeChild(link);
   }
 
-  // 🔄 รีเฟรชยอดกระเป๋าเงินอัตโนมัติทุกๆ 15 วินาที เพื่อให้สอดรับกับธุรกรรมภายนอก
   setInterval(function() {
     if (currentStudentId && currentStudent) {
       refreshBalances();
