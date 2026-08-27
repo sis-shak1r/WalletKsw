@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+ <html lang="th">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>School Wallet</title>
@@ -17,12 +19,58 @@
     .balance-card { background: linear-gradient(135deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%); color: white; border-radius: 24px; padding: 24px; box-shadow: 0 10px 25px rgba(67, 100, 247, 0.25); }
     .digital-badge { background: rgba(255, 255, 255, 0.18); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.15); }
     
-    /* เมนูด้านล่างแบบ Sticky Floating รองรับอุปกรณ์หน้าจอมีบาก (Safe Area) */
-    .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 75px; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-around: space-around; align-items: center; z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.06); padding-bottom: env(safe-area-inset-bottom); }
-    .nav-item-btn { text-align: center; color: #64748b; font-size: 11px; cursor: pointer; border: none; background: none; transition: color 0.2s; text-decoration: none; padding: 5px 0; width: 25%; }
+    /* เมนูด้านล่างแบบ Sticky Floating ปรับแบ่ง 3 คอลัมน์เท่ากันเป๊ะ */
+    .bottom-nav { 
+      position: fixed; 
+      bottom: 0; 
+      left: 50%; 
+      transform: translateX(-50%); 
+      width: 100%; 
+      max-width: 480px; 
+      height: 75px; 
+      background: #ffffff; 
+      border-top: 1px solid #e2e8f0; 
+      display: flex; 
+      align-items: center; 
+      z-index: 1000; 
+      box-shadow: 0 -4px 15px rgba(0,0,0,0.06); 
+      padding-bottom: env(safe-area-inset-bottom); 
+    }
+    .nav-col {
+      flex: 1 1 0%;
+      width: 33.333%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .nav-item-btn { 
+      text-align: center; 
+      color: #64748b; 
+      font-size: 11px; 
+      cursor: pointer; 
+      border: none; 
+      background: none; 
+      transition: color 0.2s; 
+      text-decoration: none; 
+      padding: 5px 0; 
+      width: 100%;
+    }
     .nav-item-btn i { font-size: 20px; display: block; margin-bottom: 4px; transition: transform 0.2s; }
     .nav-item-btn.active, .nav-item-btn:hover { color: #007aff; }
-    .nav-item-btn.qr-center { position: relative; top: -18px; width: 64px; height: 64px; background: linear-gradient(135deg, #007aff 0%, #0056b3 100%); color: white !important; border-radius: 50%; box-shadow: 0 4px 15px rgba(0, 122, 255, 0.35); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .nav-item-btn.qr-center { 
+      position: relative; 
+      top: -18px; 
+      width: 64px; 
+      height: 64px; 
+      background: linear-gradient(135deg, #007aff 0%, #0056b3 100%); 
+      color: white !important; 
+      border-radius: 50%; 
+      box-shadow: 0 4px 15px rgba(0, 122, 255, 0.35); 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+    }
     .nav-item-btn.qr-center i { font-size: 24px; margin: 0; color: white; }
     
     /* Full Screen Modals */
@@ -117,16 +165,23 @@
     </div>
   </div>
 
+  <!-- แถบเมนูด้านล่างที่ปรับปรุงคอลัมน์แล้ว -->
   <div id="bottom-bar" class="bottom-nav d-none">
-    <button class="nav-item-btn" onclick="openTransferMode()">
-      <i class="fa-solid fa-money-bill-transfer"></i>โอนเงิน
-    </button>
-    <button class="nav-item-btn qr-center" onclick="openFullModal('modal-qr'); autoStartCameraDirectly();">
-      <i class="fa-solid fa-qrcode"></i>
-    </button>
-    <button class="nav-item-btn" onclick="openFullModal('modal-history'); loadHistory();">
-      <i class="fa-solid fa-clock-rotate-left"></i>ประวัติ
-    </button>
+    <div class="nav-col">
+      <button class="nav-item-btn" onclick="openTransferMode()">
+        <i class="fa-solid fa-money-bill-transfer"></i>โอนเงิน
+      </button>
+    </div>
+    <div class="nav-col">
+      <button class="nav-item-btn qr-center" onclick="openFullModal('modal-qr'); autoStartCameraDirectly();">
+        <i class="fa-solid fa-qrcode"></i>
+      </button>
+    </div>
+    <div class="nav-col">
+      <button class="nav-item-btn" onclick="openFullModal('modal-history'); loadHistory();">
+        <i class="fa-solid fa-clock-rotate-left"></i>ประวัติ
+      </button>
+    </div>
   </div>
 </div>
 
