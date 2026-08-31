@@ -14,7 +14,7 @@
   <style>
     body { font-family: 'Sarabun', sans-serif; background-color: #f7f9fc; color: #2d3748; margin: 0; padding: 0; }
     
-    /* Responsive Main Wrapper สำหรับจำกัดความกว้างบนจอใหญ่ แต่ขยายเต็มจอในมือถือ */
+    /* Responsive Main Wrapper */
     .main-container { 
       width: 100%; 
       max-width: 480px; 
@@ -32,7 +32,7 @@
     .balance-card { background: linear-gradient(135deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%); color: white; border-radius: 24px; padding: 24px; box-shadow: 0 10px 25px rgba(67, 100, 247, 0.25); }
     .digital-badge { background: rgba(255, 255, 255, 0.18); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.15); }
    
-    /* เมนูด้านล่างแบบ Sticky Floating (Responsive ตามกรอบหลัก) */
+    /* เมนูด้านล่างแบบ Sticky Floating */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -86,7 +86,7 @@
     }
     .nav-item-btn.qr-center i { font-size: 24px; margin: 0; color: white; }
    
-    /* Full Screen Modals ปรับให้ Responsive รองรับทุกขนาดหน้าจอ */
+    /* Full Screen Modals */
     .fullscreen-modal { 
       position: fixed; 
       top: 0; 
@@ -776,22 +776,71 @@
     new bootstrap.Modal(document.getElementById('detailSlipModal')).show();
   }
 
-  function downloadSlipImage() {
+  /* ฟังก์ชันบันทึกรูปภาพสลิป - ปรับปรุงแก้ไขให้รองรับสมาร์ทโฟนทุกระบบ */
+  async function downloadSlipImage() {
     const slipElement = document.getElementById('slip-printable-area');
     
-    html2canvas(slipElement, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff'
-    }).then(canvas => {
-      const link = document.createElement('a');
-      link.download = 'Slip_' + new Date().getTime() + '.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    }).catch(err => {
-      console.error('ไม่สามารถบันทึกรูปภาพได้:', err);
-      Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกรูปภาพสลิปได้', 'error');
+    Swal.fire({
+      title: 'กำลังสร้างรูปภาพสลิป...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
     });
+
+    try {
+      const canvas = await html2canvas(slipElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          Swal.close();
+          return Swal.fire('ข้อผิดพลาด', 'ไม่สามารถแปลงรูปภาพได้', 'error');
+        }
+
+        const fileName = 'Slip_' + new Date().getTime() + '.png';
+        const file = new File([blob], fileName, { type: 'image/png' });
+
+        // 1. ลองใช้ Web Share API ก่อน (สำหรับ Safari iOS และ Android บนมือถือ)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            Swal.close();
+            await navigator.share({
+              files: [file],
+              title: 'บันทึกสลิปการทำรายการ',
+              text: 'สลิปหลักฐานการทำรายการ'
+            });
+            return;
+          } catch (shareErr) {
+            if (shareErr.name === 'AbortError') return; // ผู้ใช้กดปุ่มยกเลิกการแชร์เอง
+          }
+        }
+
+        // 2. ถ้า Web Share API ไม่ทำงาน (กรณีแอป LINE / In-App Browser) ให้แสดงรูปภาพให้ผู้ใช้กดค้างเพื่อบันทึก
+        const imageUrl = canvas.toDataURL('image/png');
+        Swal.close();
+
+        Swal.fire({
+          title: 'บันทึกสลิป',
+          html: `
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 10px;">
+              กดแตะที่รูปภาพค้างไว้ แล้วเลือก <b>"บันทึกรูปภาพ"</b> หรือ <b>"Save Image"</b>
+            </p>
+            <img src="${imageUrl}" style="width: 100%; max-width: 320px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          `,
+          showConfirmButton: true,
+          confirmButtonText: 'ปิดหน้าต่าง',
+          confirmButtonColor: '#64748b'
+        });
+
+      }, 'image/png');
+
+    } catch (err) {
+      console.error('ไม่สามารถบันทึกรูปภาพได้:', err);
+      Swal.close();
+      Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้างรูปภาพสลิปได้', 'error');
+    }
   }
 
   function downloadStatementXLS() {
